@@ -2024,9 +2024,6 @@ button.icon{padding:4px 8px;font-size:13px;border-radius:8px}
 #tlCanvas{display:block;cursor:pointer}
 .tlhead{position:absolute;top:0;left:0;width:2px;height:100%;background:var(--danger);pointer-events:none}
 .tlhead::before{content:"";position:absolute;top:0;left:-5px;border:6px solid transparent;border-top-color:var(--danger)}
-.modes{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--surface)}
-.mode{border:0;border-radius:0;padding:7px 14px;font-size:13px;background:transparent}
-.mode.on{background:var(--accent);color:var(--accent-fg)}
 body.std .pro-only{display:none!important}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips:empty{display:none}
@@ -2065,7 +2062,7 @@ body.std .pro-only{display:none!important}
 .check{display:flex;gap:8px;align-items:center;font-size:14px}
 details summary{cursor:pointer;color:var(--muted);font-size:13px}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
-@media (max-width:600px){body{font-size:16px;padding-block:12px 40px}button{min-height:44px;padding:10px 14px}button.icon{min-height:40px;min-width:40px}.side .stage{width:min(100%,calc(56vh * 0.5625))}.card{padding:14px}input[type=text],input[type=number],textarea{font-size:16px}h1{font-size:28px}.modes{width:100%}.mode{flex:1}}
+@media (max-width:600px){body{font-size:16px;padding-block:12px 40px}button{min-height:44px;padding:10px 14px}button.icon{min-height:40px;min-width:40px}.side .stage{width:min(100%,calc(56vh * 0.5625))}.card{padding:14px}input[type=text],input[type=number],textarea{font-size:16px}h1{font-size:28px}}
 </style>
 
 <div class="wrap">
@@ -2074,8 +2071,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
       <h1>Auto<span>Vlog</span> nhịp nhạc</h1>
       <p>Thả clip và nhạc vào, app tự dò nhịp, dựng montage hook 2 giây, gắn mốc giờ gõ chữ rồi xuất MP4 9:16. Chạy ngay trong trình duyệt máy tính hoặc điện thoại, không cần cài gì.</p>
     </div>
-    <div class="row"><div class="modes" role="group" aria-label="Chế độ dùng"><button id="modePro" class="mode">Pro · có Claude</button><button id="modeStd" class="mode">Standard · không cần Claude</button></div>
-    <span class="pill" id="envPill">Đang kiểm tra trình duyệt…</span></div>
+    <div class="row"><span class="pill" id="envPill">Đang kiểm tra trình duyệt…</span></div>
   </header>
 
   <div class="grid">
@@ -2095,9 +2091,6 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
           </label>
         </div>
         <div class="row"><button id="btnClear" hidden>Xoá hết clip</button></div>
-        <div class="row" id="sampleRow"><span class="hint">Chưa có clip? Thử ngay với bộ mẫu 6 clip:</span>
-          <button id="btnSampleA" data-music="nhac_remix.mp3">Mẫu + nhạc remix</button>
-          <button id="btnSampleB" data-music="nhac_dreaming-big.mp3">Mẫu + nhạc Mixkit</button></div>
         <label class="check"><input type="checkbox" id="autoCut" checked> Tự cắt video dài hơn 20 giây thành các đoạn đúng độ dài cảnh (dò chỗ chuyển cảnh)</label>
         <div id="loadBox" hidden><div class="bar"><i id="loadProg"></i></div><span class="hint" id="loadTxt"></span></div>
         <p class="msg" id="cutMsg"></p>
@@ -2112,10 +2105,8 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
 
       <section class="card" aria-labelledby="h2s">
         <h2 id="h2s"><span class="num">2</span>Chữ hook đầu video</h2>
-        <div class="chips" id="hookChips" aria-label="Mẫu hook có sẵn"></div>
-        <div class="row"><button id="btnCfgSave">Lưu mẫu kênh (.json)</button><button id="btnCfgOpen">Mở mẫu kênh</button><input type="file" id="cfgIn" accept=".json,application/json" hidden>
-          <label class="check"><input type="checkbox" id="autoEp" checked> Tự tăng số tập sau khi lưu video</label></div>
-        <div class="row pro-only"><button class="gold" id="btnHookAI" disabled>Claude gợi ý 5 hook</button><span class="hint" id="hookMsg">Dựa trên mục 3 "Hôm nay làm gì?" và chữ từng cảnh.</span></div>
+        <div class="row"><label class="check"><input type="checkbox" id="autoEp" checked> Tự tăng số tập sau khi lưu video</label></div>
+        <div class="row pro-only"><button class="gold" id="btnHookAI" disabled>Claude gợi ý 5 hook</button><span class="hint" id="hookMsg">Dựa trên mục "Hôm nay làm gì?" và chữ từng cảnh.</span></div>
         <div class="chips pro-only" id="hookAI" aria-label="Hook Claude gợi ý"></div>
         <div class="row">
           <label class="f">Tiêu đề<input type="text" id="tTitle" value="Khai Xuân"></label>
@@ -2123,9 +2114,6 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
         </div>
         <label class="f">Phụ đề (gõ dấu / để tự chọn chỗ xuống dòng)<input type="text" id="tSub" value="một ngày làm việc của kỹ sư"></label>
         <div class="row">
-          <label class="check"><input type="color" id="cTitle" value="#F8F8F8"> Tiêu đề</label>
-          <label class="check"><input type="color" id="cSubFill" value="#006442"> Ruột phụ đề</label>
-          <label class="check"><input type="color" id="cGold" value="#F2C23C"> Khối vàng + số tập</label>
           <label class="check"><input type="checkbox" id="upper" checked> Viết HOA câu từng cảnh</label>
           <label class="check">Giữ chữ hook <input type="number" id="holdIn" value="2.5" min="0" max="10" step="0.5" style="width:72px"> giây trước cảnh 1</label>
         </div>
@@ -2133,9 +2121,8 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
       </section>
 
       <section class="card pro-only" aria-labelledby="h3s">
-        <h2 id="h3s"><span class="num">3</span>Claude viết chữ từng cảnh</h2>
-        <div class="row"><span class="pill" id="aiState">Claude: đang kiểm tra…</span><button id="btnConnect" hidden>Kết nối Claude</button><a id="openLink" href="https://claude.ai/artifact/9qX1KsKtwmNYiPvWuHYnMo" target="_blank" rel="noopener" hidden>Mở app trên claude.ai ↗</a></div>
-        <p class="hint">Không cần đăng nhập riêng: mở app bằng link claude.ai là dùng luôn tài khoản Claude của bạn. GPT không gắn được vì claude.ai chặn trang kết nối ra dịch vụ khác.</p>
+        <h2 id="h3s"><span class="num">✦</span>Claude viết chữ từng cảnh</h2>
+        <div class="row"><span class="pill" id="aiState">Claude: đang kiểm tra…</span><button id="btnConnect" hidden>Kết nối Claude</button></div>
         <label class="f">Hôm nay làm gì? (càng cụ thể chữ càng đúng)<textarea id="ctx" placeholder="vd: khai xuân ở showroom BYD, trưa ăn heo quay, chiều chạy sang đại lý lái thử xe, tối về nhà"></textarea></label>
         <div class="row">
           <button class="gold" id="btnAI" disabled>Claude viết mốc giờ + câu</button>
@@ -2145,7 +2132,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
       </section>
 
       <section class="card" aria-labelledby="h4s">
-        <h2 id="h4s"><span class="num">4</span>Nhịp nhạc</h2>
+        <h2 id="h4s"><span class="num">3</span>Nhịp nhạc</h2>
         <div class="stat">
           <div><span>Bài</span><b id="sMusic">—</b></div>
           <div><span>BPM</span><b id="sBpm">—</b></div>
@@ -2154,14 +2141,14 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
         </div>
         <canvas id="waveAll" class="wave" height="56" aria-label="Dạng sóng cả bài nhạc, kéo vùng sáng để chọn đoạn nhạc"></canvas>
         <div class="row"><span class="hint" id="musRange">Thả nhạc vào để chọn đoạn nhạc dùng cho video.</span><button id="btnMusReset" hidden>Về đoạn tự tìm</button></div>
+        <label class="check"><input type="checkbox" id="sfxOn" checked> Hiệu ứng âm thanh giống video gốc: gõ phím, pop, tiếng "pew" trước khi nhạc dập</label>
+        <p class="msg" id="musMsg"></p>
+        <details><summary>Nâng cao: điểm dập, độ dài, nghe thử</summary>
         <div class="row">
           <label class="f">Điểm dập trong bài (phút:giây, để trống = tự tìm)<input type="text" id="dropIn" placeholder="vd 1:05" inputmode="numeric"></label>
           <label class="f">Dài tối đa (giây)<input type="number" id="maxIn" value="60" min="10" max="180"></label>
         </div>
-        <div class="row"><button id="btnHear" disabled>Nghe đoạn dập</button>
-          <label class="check"><input type="checkbox" id="sfxOn" checked> Hiệu ứng âm thanh giống video gốc: gõ phím, pop, tiếng "pew" trước khi nhạc dập</label></div>
-        <p class="msg" id="musMsg"></p>
-        <details><summary>Cách app dựng theo nhịp</summary>
+        <div class="row"><button id="btnHear" disabled>Nghe đoạn dập</button></div>
           <p class="hint">Montage hook: 1 ô nhịp (4 phách), mỗi cảnh 1/4 phách (nhạc nhanh thì 1/2 phách). Nhạc tắt 2 phách rồi vào lại đúng điểm dập. Phần vlog: mỗi cảnh 4–8 phách (~3 giây), cắt thẳng đúng phách. Âm lượng chuẩn −11 LUFS.</p>
         </details>
       </section>
@@ -2182,8 +2169,8 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
     </aside>
   </div>
   <section class="tldock" id="tlDock" hidden aria-label="Dòng thời gian">
-    <div class="tlbar"><strong>Dòng thời gian</strong><span class="hint" id="tlInfo"></span><span class="sp"></span><button class="icon" id="tlOut" aria-label="Thu nhỏ">−</button><button class="icon" id="tlIn" aria-label="Phóng to">＋</button><button class="icon" id="tlFit">Vừa khung</button><button class="icon" id="tlHide">Ẩn</button></div>
-    <div class="tlbody" id="tlBody"><div class="tllabels"><span style="top:34px">Hình</span><span style="top:78px">Chữ</span><span style="top:108px">Nhạc</span><span style="top:136px">SFX</span></div>
+    <div class="tlbar"><strong>Dòng thời gian</strong><span class="hint" id="tlInfo"></span><span class="sp"></span><button class="icon" id="tlOut" aria-label="Thu nhỏ">−</button><button class="icon" id="tlIn" aria-label="Phóng to">＋</button><button class="icon" id="tlFit">Vừa khung</button><button class="icon" id="tlHide">Hiện</button></div>
+    <div class="tlbody" id="tlBody" hidden><div class="tllabels"><span style="top:34px">Hình</span><span style="top:78px">Chữ</span><span style="top:108px">Nhạc</span><span style="top:136px">SFX</span></div>
       <div class="tlwrap" id="tlWrap"><canvas id="tlCanvas"></canvas><div class="tlhead" id="tlHead"></div></div></div>
   </section>
 </div>
@@ -2820,7 +2807,7 @@ function wrap(text, font, maxw) {
 function cfg() {
   const v = id => $(id).value.normalize('NFC').trim();
   return { title: v('tTitle'), sub: v('tSub'), ep: v('tEp'),
-    cTitle: $('cTitle').value, cFill: $('cSubFill').value, cGold: $('cGold').value, epStroke: '#2B1A0E', upper: $('upper').checked };
+    cTitle: '#F8F8F8', cFill: '#006442', cGold: '#F2C23C', epStroke: '#2B1A0E', upper: $('upper').checked };
 }
 
 // Khung chu do tu pixel khung bia video goc (1080x1920): [x0, y0, x1, y1]
@@ -3298,27 +3285,6 @@ $('btnCover').addEventListener('click', async () => {
   try { if (await saveFile(baseName() + '_bia.png', blob)) msg('outMsg', 'Đã lưu ảnh bìa ' + baseName() + '_bia.png', 'ok'); }
   catch (e) { msg('outMsg', 'Không lưu được ảnh bìa: ' + (e.message || e.code), 'err'); }
 });
-/* ---------- mau kenh (.json) ---------- */
-const CFG_IDS = ['tTitle', 'tSub', 'tEp', 'cTitle', 'cSubFill', 'cGold', 'holdIn', 'maxIn', 'ctx'], CFG_CHK = ['upper', 'sfxOn', 'autoEp', 'autoCut'];
-$('btnCfgSave').addEventListener('click', async () => {
-  const o = { app: 'AutoVlog', v: 1, fields: {}, checks: {}, off: S.off, scl: S.scl };
-  CFG_IDS.forEach(id => o.fields[id] = $(id).value); CFG_CHK.forEach(id => o.checks[id] = $(id).checked);
-  const name = noMark($('tSub').value || 'kenh').replace(/[^\w-]+/g, '_').slice(0, 40) + '_mau-kenh.json';
-  try { if (await saveFile(name, new Blob([JSON.stringify(o, null, 2)], { type: 'application/json' }))) msg('outMsg', 'Đã lưu mẫu kênh ' + name, 'ok'); }
-  catch (e) { msg('outMsg', 'Không lưu được mẫu kênh: ' + (e.message || e.code), 'err'); }
-});
-$('btnCfgOpen').addEventListener('click', () => $('cfgIn').click());
-$('cfgIn').addEventListener('change', async ev => {
-  const f = ev.target.files[0]; ev.target.value = ''; if (!f) return;
-  try {
-    const o = JSON.parse(await f.text()); if (o.app !== 'AutoVlog') throw new Error('không phải file mẫu kênh AutoVlog');
-    for (const id of CFG_IDS) if (o.fields && id in o.fields) { $(id).value = o.fields[id]; store.set(id, $(id).value); }
-    for (const id of CFG_CHK) if (o.checks && id in o.checks) $(id).checked = !!o.checks[id];
-    for (const k in S.off) { if (o.off && Array.isArray(o.off[k])) S.off[k] = o.off[k]; if (o.scl && typeof o.scl[k] === 'number') S.scl[k] = o.scl[k]; }
-    store.set('off', JSON.stringify(S.off)); store.set('scl', JSON.stringify(S.scl)); idleKey = ''; analyse(); rebuild();
-    msg('outMsg', 'Đã mở mẫu kênh ' + f.name, 'ok');
-  } catch (e) { msg('outMsg', 'Không mở được mẫu kênh: ' + (e.message || e), 'err'); }
-});
 /* ---------- dan chu hang loat, gio tu file, sap theo gio quay ---------- */
 // Luu y: tren iPhone, file chon tu Thu vien anh co the mang gio chep file chu khong phai gio quay.
 const hhmm = d => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
@@ -3340,16 +3306,6 @@ $('btnTimeFile').addEventListener('click', () => {
 $('btnSortTime').addEventListener('click', () => {
   S.clips.sort((a, b) => shotTime(a) - shotTime(b)); renderClips(); rebuild(); msg('cutMsg', 'Đã sắp các cảnh theo giờ quay.', 'ok');
 });
-/* ---------- che do Pro / Standard ---------- */
-function setMode(m) {
-  document.body.classList.toggle('std', m === 'std');
-  $('modePro').classList.toggle('on', m !== 'std'); $('modeStd').classList.toggle('on', m === 'std');
-  store.set('mode', m);
-}
-$('modePro').addEventListener('click', () => { if (!window.AV_OFFLINE) setMode('pro'); });
-$('modeStd').addEventListener('click', () => setMode('std'));
-if (window.AV_OFFLINE) { $('modePro').disabled = true; $('modePro').title = 'Bản offline không có Claude. Dùng link claude.ai để có bản Pro.'; $('sampleRow').hidden = true; setMode('std'); }
-else setMode(store.get('mode', 'pro'));
 
 /* ---------- Claude goi y chu ---------- */
 $('btnAI').addEventListener('click', async () => {
@@ -3369,17 +3325,25 @@ $('btnAI').addEventListener('click', async () => {
         drawCover(oc.getContext('2d'), cl.el, cl.w, cl.h, 360, 640);
         return new Promise(r => oc.toBlob(r, 'image/jpeg', 0.8));
       }));
-      const prev = clips.slice(0, i).map((cl, k) => `Cảnh ${k + 1}: ${cl.gio || '(không giờ)'} – ${cl.cau || ''}`).join('\n');
+      const tf = cl => { const t = shotTime(cl); return t ? hhmm(new Date(t)) : ''; };
+      const prev = clips.slice(0, i).map((cl, k) => `${k + 1}. ${cl.gio || '--:--'} | ${cl.cau || ''}`).join('\n');
+      const cur = part.map((cl, k) => `${i + k + 1}. giờ quay theo file: ${tf(cl) || 'không rõ'}; chữ đã gõ: ${cl.gio || '--:--'} | ${cl.cau || '(trống)'}`).join('\n');
       const prompt = [
-        'Bạn là editor vlog TikTok tiếng Việt, phong cách "một ngày làm việc của …" (giọng vui, đời thường, ngắn gọn).',
-        `Tiêu đề video: "${c.title}". Phụ đề: "${c.sub}".`,
-        `Người dùng kể hôm nay: "${$('ctx').value.trim() || 'không nói thêm'}".`,
-        prev ? 'Các cảnh trước đã có chữ:\n' + prev : '',
-        `Có ${part.length} ảnh, mỗi ảnh là 1 cảnh theo đúng thứ tự, ảnh 1 = cảnh ${i + 1}.`,
-        'Viết cho mỗi cảnh:',
-        '- "gio": giờ dạng HH:MM, tăng dần hợp lý theo cảnh (sáng đi làm, trưa, chiều, tối về). Để "" nếu cảnh tiếp nối cùng mốc với cảnh trước.',
-        '- "cau": 3–7 chữ tiếng Việt, kiểu "BON BON XE TRÊN ĐƯỜNG", "ĐÃ ĐẾN CÔNG TY", "OKI RỒI... GO HOME THÔI!!!". Chỉ nói điều thấy trong ảnh hoặc người dùng đã kể; không bịa tên riêng.',
-        `Trả về đúng JSON: {"canh":[{"so":${i + 1},"gio":"07:35","cau":"..."}]} với đủ ${part.length} phần tử.`
+        'Bạn là editor TikTok chuyên series vlog dọc "một ngày làm việc của …" tiếng Việt: chữ trên màn hình ngắn, vui, đời thường.',
+        '<boi_canh>',
+        `Tiêu đề: ${c.title} | Phụ đề: ${c.sub.replace(/\//g, ' ')}`,
+        `Người quay kể hôm nay: ${$('ctx').value.trim() || '(không kể)'}`,
+        '</boi_canh>',
+        prev ? '<canh_truoc_da_xong>\n' + prev + '\n</canh_truoc_da_xong>' : '',
+        `<canh_can_viet>\nCó ${part.length} ảnh đính kèm, đúng thứ tự: ảnh 1 = cảnh ${i + 1}.\n${cur}\n</canh_can_viet>`,
+        '<nhiem_vu>',
+        'Với MỖI cảnh trong <canh_can_viet>, viết:',
+        '- gio: mốc giờ "HH:MM" hiện góc màn hình. Có giờ quay theo file thì dùng giờ đó (làm tròn 5 phút). Không có thì đoán hợp lý theo ánh sáng và việc đang làm. Giờ không được lùi so với cảnh trước. Để "" nếu cảnh này tiếp nối liền cảnh trước, cùng việc.',
+        '- cau: 3–7 chữ tiếng Việt có dấu, nói việc đang làm như kể với bạn bè. Chỉ dùng điều nhìn thấy trong ảnh hoặc người quay đã kể. Không bịa tên người, tên hãng, con số.',
+        'Nếu chữ đã gõ không trống, giữ nguyên ý đó, chỉ viết gọn lại.',
+        '</nhiem_vu>',
+        '<vi_du_cau>BON BON XE TRÊN ĐƯỜNG | ĐÃ ĐẾN CÔNG TY | CÀ PHÊ SÁNG CÁI ĐÃ | HỌP ĐẦU TUẦN | OKI RỒI... GO HOME THÔI!!!</vi_du_cau>',
+        `Chỉ trả về JSON, không thêm chữ nào khác: {"canh":[{"so":${i + 1},"gio":"07:35","cau":"..."}]} — đủ ${part.length} phần tử, "so" là số cảnh.`
       ].filter(Boolean).join('\n');
       const res = await sample.json(prompt, { images: imgs, modelTier: 'default' });
       const arr = (res && res.canh) || [];
@@ -3428,15 +3392,13 @@ function drawIdle() {
   if (c.el && c.el.readyState >= 2) { S._cfg = cfg(); S._hook = hookLayout(S._cfg, tl.M, tl.shot); drawFrame(cx, 0, c.el, s0); $('badge').textContent = 'Khung bìa'; }
 }
 Promise.all([`800 66px ${F_TITLE}`, `800 66px ${F_SUB}`, `600 50px ${F_TS}`, `600 34px ${FONT}`].map(f => document.fonts.load(f, 'Khai Xuân tập ộ'))).finally(() => { mcache.clear(); mcache2.clear(); requestAnimationFrame(demoLoop); });
-['tTitle', 'tSub', 'tEp', 'cTitle', 'cSubFill', 'cGold', 'upper'].forEach(id => $(id).addEventListener('input', () => { idleKey = ''; tlDirty(); }));
+['tTitle', 'tSub', 'tEp', 'upper'].forEach(id => $(id).addEventListener('input', () => { idleKey = ''; tlDirty(); }));
 
 async function refreshAI() {
   const el = $('aiState'), btn = $('btnConnect');
-  if (!window.claude || !window.claude.use) { el.textContent = 'Claude: chưa kết nối (app đang mở ngoài claude.ai)'; $('openLink').hidden = false; return; }
-  if (!S.sample) { el.textContent = 'Claude: chưa dùng được ở chỗ xem này'; $('openLink').hidden = false; return; }
+  if (!S.sample) return;
   const perm = await claude.use('permissions').catch(() => null);
   const st = perm ? await perm.state('sample').catch(() => 'prompt') : 'prompt';
-  $('openLink').hidden = true;
   if (st === 'granted') { el.textContent = 'Claude: đã kết nối bằng tài khoản claude.ai của bạn'; btn.hidden = true; }
   else if (st === 'denied') { el.textContent = 'Claude: bạn đã chặn quyền'; btn.textContent = 'Mở lại quyền Claude'; btn.hidden = false; }
   else { el.textContent = 'Claude: sẵn sàng, cần bạn cho phép lần đầu'; btn.textContent = 'Kết nối Claude'; btn.hidden = false; }
@@ -3448,9 +3410,11 @@ $('btnConnect').addEventListener('click', async () => {
   else await perm.request(['sample', 'downloads']);
   refreshAI();
 });
+// Phan Claude chi hien khi mo tren claude.ai va goi duoc Claude; ban web/offline an di.
+document.body.classList.add('std');
 (async () => {
-  if (!window.claude || !window.claude.use) { refreshAI(); return; }
-  claude.use('sample').then(s => { S.sample = s; rebuild(); refreshAI(); if (!s) msg('aiMsg', 'Chỗ xem này không gọi được Claude. Mở artifact trên claude.ai để dùng.'); });
+  if (window.AV_OFFLINE || !window.claude || !window.claude.use) return;
+  claude.use('sample').then(s => { S.sample = s; document.body.classList.toggle('std', !s); rebuild(); refreshAI(); });
   claude.use('downloads').then(d => { S.downloads = d; });
 })();
 
@@ -3580,17 +3544,6 @@ const upPtr = e => { touches.delete(e.pointerId); if (S.drag && S.drag.mode === 
 cv.addEventListener('pointerup', upPtr); cv.addEventListener('pointercancel', upPtr);
 
 /* ---------- mau hook ---------- */
-// [tieu de, phu de, kieu hook] - tieu de 1-4 chu, cu the: su kien / con so / lan dau / bat ngo
-const HOOK_PRESETS = [
-  ['Khai Xuân', 'một ngày làm việc của kỹ sư ô tô', 'Sự kiện'],
-  ['Ngày giao 7 xe', 'một ngày làm việc của tư vấn bán hàng', 'Con số'],
-  ['Lần đầu lái thử', 'một ngày làm việc của kỹ sư ô tô', 'Lần đầu'],
-  ['Sếp bất ngờ ghé', 'một ngày làm việc ở showroom', 'Bất ngờ'],
-  ['Chốt sale cuối tháng', 'một ngày làm việc của sale ô tô', 'Áp lực'],
-  ['Ngày đầu đi làm', 'hành trình tân binh showroom', 'Lần đầu'],
-  ['Bảo dưỡng 50 xe', 'một ngày ở xưởng dịch vụ', 'Con số'],
-  ['Thứ Hai đầu tuần', 'một ngày làm việc của kỹ sư ô tô', 'Đời thường'],
-];
 function renderChips(list, el, ai) {
   el.innerHTML = '';
   list.forEach(h => {
@@ -3604,20 +3557,26 @@ function renderChips(list, el, ai) {
     el.appendChild(b);
   });
 }
-renderChips(HOOK_PRESETS, $('hookChips'));
 $('btnHookAI').addEventListener('click', async () => {
   const sample = S.sample; if (!sample) return;
   $('btnHookAI').disabled = true; $('hookMsg').textContent = 'Claude đang nghĩ hook…';
   try {
     const scenes = S.clips.filter(c => c.ok && (c.gio || c.cau)).map((c, i) => `${i + 1}. ${c.gio} ${c.cau}`).join('\n');
     const prompt = [
-      'Bạn viết hook mở đầu cho vlog TikTok tiếng Việt dạng series "một ngày làm việc của …".',
-      'Hook gồm 2 dòng hiện trong 3 giây đầu: TIÊU ĐỀ to (1–4 chữ, tối đa 16 ký tự) và PHỤ ĐỀ nhỏ (tối đa 34 ký tự, giữ dạng nhận diện series như "một ngày làm việc của kỹ sư ô tô").',
-      'Tiêu đề phải cụ thể và gây tò mò: một sự kiện, một con số, "lần đầu", một bất ngờ, hoặc áp lực. Không dùng chữ chung chung như "vlog", "một ngày".',
-      `Người dùng kể hôm nay: "${$('ctx').value.trim() || 'không nói thêm'}".`,
-      scenes ? 'Chữ các cảnh trong video:\n' + scenes : '',
-      `Tiêu đề hiện tại: "${$('tTitle').value}". Phụ đề hiện tại: "${$('tSub').value}".`,
-      'Chỉ dựa vào thông tin trên, không bịa tên riêng. Trả về đúng JSON: {"hook":[{"tieu_de":"...","phu_de":"...","kieu":"Sự kiện|Con số|Lần đầu|Bất ngờ|Áp lực|Đời thường"}]} gồm 5 phương án khác kiểu nhau.'
+      'Bạn là người viết hook cho series TikTok dọc tiếng Việt "một ngày làm việc của …". Hook hiện trong 3 giây đầu và quyết định người xem có lướt qua hay không.',
+      '<boi_canh>',
+      `Người quay kể hôm nay: ${$('ctx').value.trim() || '(không kể)'}`,
+      scenes ? 'Chữ các cảnh theo thứ tự:\n' + scenes : 'Chưa có chữ cảnh.',
+      `Hook hiện tại: ${$('tTitle').value} | ${$('tSub').value.replace(/\//g, ' ')}`,
+      '</boi_canh>',
+      '<quy_tac>',
+      '- tieu_de: 1–4 chữ, tối đa 16 ký tự, cụ thể và gây tò mò: một sự kiện, một con số, "lần đầu", một bất ngờ hoặc một áp lực có thật trong bối cảnh. NEVER dùng chữ chung chung như "vlog", "một ngày", "hôm nay".',
+      '- phu_de: tối đa 34 ký tự, giữ dạng nhận diện series "một ngày làm việc của …" (lấy nghề từ phụ đề hiện tại nếu có).',
+      '- Chỉ dựa trên bối cảnh trên. Không bịa tên người, tên hãng, con số.',
+      '- 5 phương án, mỗi phương án một kiểu khác nhau.',
+      '</quy_tac>',
+      '<vi_du>Khai Xuân | một ngày làm việc của kỹ sư ô tô (Sự kiện); Ngày giao 7 xe | một ngày làm việc của tư vấn bán hàng (Con số); Lần đầu lái thử | một ngày làm việc của kỹ sư ô tô (Lần đầu)</vi_du>',
+      'Chỉ trả về JSON, không thêm chữ nào khác: {"hook":[{"tieu_de":"...","phu_de":"...","kieu":"Sự kiện|Con số|Lần đầu|Bất ngờ|Áp lực|Đời thường"}]}'
     ].filter(Boolean).join('\n');
     const res = await sample.json(prompt, { modelTier: 'default' });
     const list = ((res && res.hook) || []).slice(0, 5).map(h => [String(h.tieu_de || '').slice(0, 24), String(h.phu_de || '').slice(0, 40), String(h.kieu || '')]).filter(h => h[0]);
@@ -3629,27 +3588,6 @@ $('btnHookAI').addEventListener('click', async () => {
   $('btnHookAI').disabled = !S.sample;
 });
 
-/* ---------- bo mau de thu ---------- */
-const SAMPLE_CAPS = [['07:30', 'Cà phê sáng rồi đi làm'], ['08:00', 'Đã đến công ty'], ['09:30', 'Họp đầu năm'],
-  ['13:30', 'Chạy thử xe mới'], ['15:00', 'Kiểm tra xe giao khách'], ['17:30', 'Oki rồi... go home thôi!!!']];
-async function loadSample(music) {
-  if (S.busy) return;
-  if (S.previewStop) S.previewStop();
-  S.clips = []; S.outBlob = null; S.mus = null; showCanvas(); $('btnSave').hidden = true; renderClips();
-  msg('outMsg', 'Đang nạp bộ mẫu…');
-  try {
-    const names = ['clip_01.mp4', 'clip_02.mp4', 'clip_03.mp4', 'clip_04.mp4', 'clip_05.mp4', 'clip_06.mp4', music];
-    const files = await Promise.all(names.map(async n => {
-      const r = await fetch('sample/' + n); if (!r.ok) throw new Error('thiếu ' + n);
-      return new File([await r.blob()], n, { type: n.endsWith('.mp3') ? 'audio/mpeg' : 'video/mp4' });
-    }));
-    $('tTitle').value = 'Khai Xuân'; $('tSub').value = 'một ngày làm việc của kỹ sư'; $('tEp').value = 'tập 1';
-    await addFiles(files);
-    S.clips.forEach((c, i) => { if (SAMPLE_CAPS[i]) { c.gio = SAMPLE_CAPS[i][0]; c.cau = SAMPLE_CAPS[i][1]; } });
-    renderClips(); rebuild(); idleKey = '';
-  } catch (e) { msg('outMsg', 'Không nạp được bộ mẫu: ' + (e.message || e), 'err'); }
-}
-['btnSampleA', 'btnSampleB'].forEach(id => $(id).addEventListener('click', () => loadSample($(id).dataset.music)));
 
 /* che do thu nghiem tren may (localhost): ?demo=a.mp4,b.mp4,nhac.m4a */
 (async () => {
