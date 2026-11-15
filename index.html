@@ -2033,6 +2033,10 @@ body.std .pro-only{display:none!important}
 .chip:hover{border-color:var(--accent)}
 .chip.ai{background:color-mix(in srgb,var(--gold) 22%,var(--surface))}
 .clip .trim{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+.clip .adj{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;font-size:12px;color:var(--muted)}
+.clip .adj label,.clip .adj .g{display:flex;align-items:center;gap:6px;flex:1 1 150px;min-width:0}
+.clip .adj input[type=range]{flex:1;min-width:60px;accent-color:var(--accent)}
+.clip .adj output{font-family:var(--f-mono);min-width:38px;text-align:right}
 .clip .trim .rng{font-family:var(--f-mono);font-variant-numeric:tabular-nums;margin-right:4px}
 @media (max-width:560px){.clip{position:relative;grid-template-columns:40px 48px minmax(0,1fr);gap:8px}
 .clip .ord{width:40px}.clip img,.clip .ph{width:48px;height:85px}
@@ -2133,7 +2137,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
           <label class="check"><input type="checkbox" id="upper" checked> Viết HOA câu từng cảnh</label>
           <label class="check">Cảnh cuối của hook giữ <input type="number" id="holdIn" value="2.5" min="2" max="10" step="0.5" style="width:72px"> giây để người xem đọc tiêu đề + tập</label>
         </div>
-        <p class="hint">Hook chạy các cảnh theo đúng thứ tự 1 → cuối, cảnh cuối cùng đứng lâu (tối thiểu 2 giây). Hiệu ứng: chữ cái tiêu đề bay vào, phụ đề gõ từng chữ, vạch tia lấp lánh, số tập nảy lên. Khung đầu tiên hiện đủ chữ để làm ảnh bìa.</p>
+        <p class="hint">Mỗi cảnh có 🔍 phóng to/thu nhỏ khung hình và 🔇/🔊 âm lượng tiếng gốc (mặc định tắt, chỉ nhạc). Hook chạy các cảnh theo đúng thứ tự 1 → cuối, cảnh cuối cùng đứng lâu (tối thiểu 2 giây). Hiệu ứng: chữ cái tiêu đề bay vào, phụ đề gõ từng chữ, vạch tia lấp lánh, số tập nảy lên. Khung đầu tiên hiện đủ chữ để làm ảnh bìa.</p>
       </section>
 
       <section class="card pro-only" aria-labelledby="h3s">
@@ -2165,7 +2169,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
           <label class="f">Dài tối đa (giây)<input type="number" id="maxIn" value="60" min="10" max="180"></label>
         </div>
         <div class="row"><button id="btnHear" disabled>Nghe đoạn dập</button></div>
-          <p class="hint">Montage hook: 1 ô nhịp (4 phách), mỗi cảnh 1/4 phách (nhạc nhanh thì 1/2 phách). Nhạc tắt 2 phách rồi vào lại đúng điểm dập. Phần vlog: mỗi cảnh 4–8 phách (~3 giây), cắt thẳng đúng phách. Âm lượng chuẩn −11 LUFS.</p>
+          <p class="hint">Montage hook: 1 ô nhịp (4 phách), mỗi cảnh 1/4 phách (nhạc nhanh thì 1/2 phách). Nhạc chạy liền mạch, dập đúng lúc vào cảnh 1. Phần vlog: mỗi cảnh 4–8 phách (~3 giây), cắt thẳng đúng phách. Âm lượng chuẩn −11 LUFS.</p>
         </details>
       </section>
     </div>
@@ -2356,8 +2360,9 @@ async function seek(v, t) {
   if (Math.abs(v.currentTime - t) < 0.002 && v.readyState >= 2) return;
   const p = once(v, 'seeked'); v.currentTime = t; await p;
 }
-function drawCover(ctx, src, sw, sh, w = W, h = H) {
-  const s = Math.max(w / sw, h / sh), dw = sw * s, dh = sh * s;
+function drawCover(ctx, src, sw, sh, w = W, h = H, z = 1) {
+  if (z < 1) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h); }        // thu nho: phan trong to den
+  const s = Math.max(w / sw, h / sh) * z, dw = sw * s, dh = sh * s;
   ctx.drawImage(src, (w - dw) / 2, (h - dh) / 2, dw, dh);
 }
 // Nap video chac hon: cho metadata truoc, neu trinh duyet (iPhone/Android) chua giai ma khung dau thi "kich" bang play/pause.
@@ -2419,7 +2424,7 @@ async function makeThumb(c, t) {
   try {
     await seek(c.el, t);
     const cv2 = document.createElement('canvas'); cv2.width = 180; cv2.height = 320;
-    drawCover(cv2.getContext('2d'), c.el, c.w, c.h, 180, 320);
+    drawCover(cv2.getContext('2d'), c.el, c.w, c.h, 180, 320, c.zoom || 1);
     c.thumb = cv2.toDataURL('image/jpeg', 0.7);
   } catch (e) {}
 }
@@ -2482,7 +2487,9 @@ function renderClips() {
     d.innerHTML = `<input class="ord" type="number" inputmode="numeric" min="1" max="${S.clips.length}" value="${i + 1}" aria-label="Thứ tự cảnh">${c.thumb ? `<img alt="" src="${c.thumb}">` : '<span class="ph"></span>'}
       <div class="meta"><div class="name"><b></b> · ${c.ok ? c.dur.toFixed(1) + ' giây' : c.loading ? 'đang nạp…' : ''}</div>
       ${c.ok ? `<div class="ins"><input class="gio" type="text" placeholder="07:35" aria-label="Giờ cảnh ${i + 1}" id="g${c.id}"><input type="text" placeholder="Câu cho cảnh này" aria-label="Câu cảnh ${i + 1}" id="c${c.id}"></div>
-      <div class="trim"><span class="rng"></span><button class="icon" data-a="trim">✂ Chọn đoạn</button><button class="icon" data-a="auto">⚡ Tự cắt</button><button class="icon" data-a="dup">＋ Thêm đoạn từ clip này</button></div>` : `<div class="name"></div>`}</div>
+      <div class="trim"><span class="rng"></span><button class="icon" data-a="trim">✂ Chọn đoạn</button><button class="icon" data-a="auto">⚡ Tự cắt</button><button class="icon" data-a="dup">＋ Thêm đoạn từ clip này</button></div>
+      <div class="adj"><label title="Phóng to / thu nhỏ khung hình">🔍<input type="range" class="zm" min="50" max="250" step="5" aria-label="Zoom khung hình cảnh ${i + 1}"><output class="zv"></output></label>
+        <span class="g" title="Âm lượng tiếng gốc của clip"><button type="button" class="icon mute" data-a="mute"></button><input type="range" class="vl" min="0" max="200" step="10" aria-label="Âm lượng cảnh ${i + 1}"><output class="vv"></output></span></div>` : `<div class="name"></div>`}</div>
       <div class="acts">${!c.ok && !c.loading ? '<button class="icon" data-a="retry" aria-label="Thử lại">↻</button>' : ''}<button class="icon" data-a="del" aria-label="Bỏ clip">✕</button></div>`;
     d.querySelector('.name b').textContent = c.name;
     const ord = d.querySelector('.ord');
@@ -2502,6 +2509,15 @@ function renderClips() {
       g.addEventListener('input', () => { c.gio = g.value; tlDirty(); });
       q.addEventListener('input', () => { c.cau = q.value; tlDirty(); });
       d.querySelector('.rng').textContent = rangeText(c);
+      const zm = d.querySelector('.zm'), vl = d.querySelector('.vl'), mb = d.querySelector('.mute');
+      const showA = () => { d.querySelector('.zv').textContent = Math.round(100 * (c.zoom || 1)) + '%';
+        const v = Math.round(100 * (c.vol || 0)); d.querySelector('.vv').textContent = v ? v + '%' : 'Tắt';
+        mb.textContent = v ? '🔊' : '🔇'; mb.setAttribute('aria-label', v ? 'Tắt tiếng clip' : 'Bật tiếng clip'); };
+      zm.value = Math.round(100 * (c.zoom || 1)); vl.value = Math.round(100 * (c.vol || 0)); showA();
+      let zt; zm.addEventListener('input', () => { c.zoom = zm.value / 100; showA(); S.stills = null; idleKey = '';
+        clearTimeout(zt); zt = setTimeout(() => makeThumb(c, c.manual ? c.tin + 0.1 : (c.tin + c.tout) / 2).then(() => { const im = d.querySelector('img'); if (im && c.thumb) im.src = c.thumb; }), 250); });
+      vl.addEventListener('input', () => { c.vol = vl.value / 100; if (c.vol) c._lastVol = c.vol; showA(); S.mix = null; });
+      c._mute = () => { c.vol = c.vol ? 0 : (c._lastVol || 1); vl.value = Math.round(100 * c.vol); showA(); S.mix = null; };
     }
     d.addEventListener('click', ev => {
       const a = ev.target.dataset.a; if (!a) return;
@@ -2509,6 +2525,7 @@ function renderClips() {
       if (a === 'trim') { S.trimId = S.trimId === c.id ? null : c.id; renderClips(); return; }
       if (a === 'dup') { dupClip(c); return; }
       if (a === 'auto') { autoSplit(c); return; }
+      if (a === 'mute') { c._mute && c._mute(); return; }
       if (a === 'retry') { loadInto(c).then(() => rebuild()); return; }
       if (a === 'del') S.clips.splice(k, 1);
       renderClips(); rebuild();
@@ -2693,7 +2710,7 @@ $('holdIn').addEventListener('change', () => rebuild());
 function buildTimeline() {
   const clips = S.clips.filter(c => c.ok), mus = S.mus;
   if (clips.length < 1 || !mus) return null;
-  const b = mus.beat, MB = b >= 0.4 ? 4 : 8, sub = b / 4 >= 0.1 ? 4 : 2, shot = b / sub, nM = MB * sub, PB = 2;
+  const b = mus.beat, MB = b >= 0.4 ? 4 : 8, sub = b / 4 >= 0.1 ? 4 : 2, shot = b / sub, nM = MB * sub, PB = 0;   // khong ngat nhac sau hook: nhac chay lien, dap dung luc vao canh 1
   let drop = mus.drop + (S.musShift || 0) * b; while (drop - (MB + PB) * b < 0) drop += b;
   let mStart = drop - (MB + PB) * b;
   const len = c => c.tout - c.tin;                      // doan nguoi dung chon (mac dinh ca clip)
@@ -3123,7 +3140,7 @@ function drawStamp(ctx, t, seg, SL) {
 function drawFrame(ctx, t, src, seg) {
   const tl = S.tl, c = S._cfg;
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
-  if (src) drawCover(ctx, src, src.videoWidth || src.width, src.videoHeight || src.height);
+  if (src) drawCover(ctx, src, src.videoWidth || src.width, src.videoHeight || src.height, W, H, seg && src instanceof HTMLVideoElement ? (seg.clip.zoom || 1) : 1);
   if (S.sticker && t < tl.hookEnd) {
     const sw = 230, sh = sw * S.sticker.naturalHeight / S.sticker.naturalWidth;
     ctx.drawImage(S.sticker, W - sw - 50, 230 + 12 * Math.sin(t * 7), sw, sh);
@@ -3141,7 +3158,7 @@ async function prepStills(onP) {
   for (let i = 0; i < ms.length; i++) {
     const s = ms[i]; await seek(s.clip.el, s.ss);
     const oc = document.createElement('canvas'); oc.width = W; oc.height = H;
-    drawCover(oc.getContext('2d'), s.clip.el, s.clip.w, s.clip.h);
+    drawCover(oc.getContext('2d'), s.clip.el, s.clip.w, s.clip.h, W, H, s.clip.zoom || 1);
     s.still = oc; st.push(oc); onP && onP(i / ms.length);
   }
   S.stills = st;
@@ -3153,10 +3170,19 @@ async function renderMix() {
   const ac = new OfflineAudioContext(2, len, 48000);
   const src = ac.createBufferSource(); src.buffer = S.music;
   const g = ac.createGain(), A = tl.hookEnd, B = tl.hookEnd + tl.PB * tl.beat, end = tl.end;
-  g.gain.setValueAtTime(1, 0); g.gain.setValueAtTime(1, Math.max(0, A - 0.02)); g.gain.linearRampToValueAtTime(0, A);
-  g.gain.setValueAtTime(0, B - 0.004); g.gain.linearRampToValueAtTime(1, B);
+  g.gain.setValueAtTime(1, 0);
+  if (B - A > 0.05) { g.gain.setValueAtTime(1, Math.max(0, A - 0.02)); g.gain.linearRampToValueAtTime(0, A); g.gain.setValueAtTime(0, B - 0.004); g.gain.linearRampToValueAtTime(1, B); }
   g.gain.setValueAtTime(1, Math.max(B, end - 1.2)); g.gain.linearRampToValueAtTime(0, end);
   src.connect(g); g.connect(ac.destination); src.start(0, tl.mStart, end);
+  // tieng goc cua clip (chi phan vlog), theo am luong tung clip; 0 = tat tieng
+  for (const sg of tl.segs) {
+    const v = sg.clip.vol || 0; if (sg.kind !== 'vlog' || v <= 0) continue;
+    const ab = await clipAudio(sg.clip); if (!ab) continue;
+    const s2 = ac.createBufferSource(), g2 = ac.createGain(), d = sg.t1 - sg.t0; s2.buffer = ab;
+    g2.gain.setValueAtTime(0, sg.t0); g2.gain.linearRampToValueAtTime(v, sg.t0 + 0.03);
+    g2.gain.setValueAtTime(v, sg.t1 - 0.03); g2.gain.linearRampToValueAtTime(0, sg.t1);
+    s2.connect(g2); g2.connect(ac.destination); s2.start(sg.t0, sg.ss, d);
+  }
   if ($('sfxOn').checked) {
     const sb = await loadSfx();
     for (const [t, n, gain, dur] of sfxEvents()) {
@@ -3193,6 +3219,14 @@ async function renderMix() {
   let pk = 0; for (let c = 0; c < 2; c++) { const d = out.getChannelData(c); for (let i = 0; i < d.length; i++) { const v = Math.abs(d[i]); if (v > pk) pk = v; } }
   if (pk > 0.85) { const s = 0.85 / pk; for (let c = 0; c < 2; c++) { const d = out.getChannelData(c); for (let i = 0; i < d.length; i++) d[i] *= s; } }
   S.mix = out; S.mixLufs = I;
+}
+
+const AUD = new Map();   // file -> AudioBuffer | null (clip khong co tieng)
+async function clipAudio(c) {
+  if (AUD.has(c.file)) return AUD.get(c.file);
+  let ab = null;
+  try { ab = await new OfflineAudioContext(2, 48000, 48000).decodeAudioData(await c.file.arrayBuffer()); } catch (e) {}
+  AUD.set(c.file, ab); return ab;
 }
 
 /* ---------- SFX (thu vien 3_SFX, Mixkit) ---------- */
@@ -3396,7 +3430,7 @@ $('btnCover').addEventListener('click', async () => {
   const c = cfg(), L = hookLayout(c, 1.97, 0.133), oc = document.createElement('canvas'); oc.width = W; oc.height = H;
   const g = oc.getContext('2d'), s0 = S.tl && S.tl.segs[0], el = s0 && s0.clip.el;
   g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
-  if (el && el.readyState >= 2) { await seek(el, s0.ss).catch(() => {}); drawCover(g, el, s0.clip.w, s0.clip.h); }
+  if (el && el.readyState >= 2) { await seek(el, s0.ss).catch(() => {}); drawCover(g, el, s0.clip.w, s0.clip.h, W, H, s0.clip.zoom || 1); }
   else { const gr = g.createLinearGradient(0, 0, W, H); gr.addColorStop(0, '#2E4A3F'); gr.addColorStop(1, '#0E1A14'); g.fillStyle = gr; g.fillRect(0, 0, W, H); }
   if (S.sticker) g.drawImage(S.sticker, W - 280, 230, 230, 230 * S.sticker.naturalHeight / S.sticker.naturalWidth);
   drawHook(g, 0.03, L, c);
@@ -3514,7 +3548,7 @@ $('btnDraftSave').addEventListener('click', async () => {
     for (const [k, f] of files) if (!have.has(k)) { try { await idb.put('files', k, f); } catch (e) { miss++; } }
     for (const k of have) if (!files.has(k)) await idb.del('files', k).catch(() => {});
     const meta = { at: Date.now(), v: 1,
-      clips: cl.map(c => ({ k: fKey(c.file), name: c.name, tin: c.tin, tout: c.tout, manual: !!c.manual, cut: !!c.cut, gio: c.gio, cau: c.cau })),
+      clips: cl.map(c => ({ k: fKey(c.file), name: c.name, tin: c.tin, tout: c.tout, manual: !!c.manual, cut: !!c.cut, gio: c.gio, cau: c.cau, zoom: c.zoom || 1, vol: c.vol || 0 })),
       music: S.musFile ? fKey(S.musFile) : null, musShift: S.musShift || 0,
       fields: Object.fromEntries(DRAFT_F.map(id => [id, $(id).value])), checks: Object.fromEntries(DRAFT_C.map(id => [id, $(id).checked])),
       off: S.off, scl: S.scl };
@@ -3548,7 +3582,7 @@ $('btnDraftOpen').addEventListener('click', async () => {
         await loadInto(b0); base.set(o.k, b0);
       }
       if (!b0.ok) { missing.push(o.name); continue; }
-      const c = Object.assign({}, b0, { id: ++S.seq, name: o.name, tin: clamp(o.tin, 0, b0.dur), tout: clamp(o.tout, 0, b0.dur), manual: o.manual, cut: o.cut, gio: o.gio || '', cau: o.cau || '' });
+      const c = Object.assign({}, b0, { id: ++S.seq, name: o.name, tin: clamp(o.tin, 0, b0.dur), tout: clamp(o.tout, 0, b0.dur), manual: o.manual, cut: o.cut, gio: o.gio || '', cau: o.cau || '', zoom: o.zoom || 1, vol: o.vol || 0 });
       S.clips.push(c); await makeThumb(c, c.manual ? c.tin + 0.1 : (c.tin + c.tout) / 2); renderClips();
     }
     box.hidden = true; idleKey = ''; analyse(); rebuild();
@@ -3655,7 +3689,7 @@ function drawEdit() {
   const SL = stampLayout({ clip: { gio: '07:35', cau: 'Câu mốc giờ mẫu' }, t0: 0, t1: 9 }, c);
   const s0 = S.tl && S.tl.segs[0], el = s0 && s0.clip.el;
   cx.fillStyle = '#000'; cx.fillRect(0, 0, W, H);
-  if (el && el.readyState >= 2) drawCover(cx, el, s0.clip.w, s0.clip.h);
+  if (el && el.readyState >= 2) drawCover(cx, el, s0.clip.w, s0.clip.h, W, H, s0.clip.zoom || 1);
   else { const g = cx.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#2E4A3F'); g.addColorStop(1, '#0E1A14'); cx.fillStyle = g; cx.fillRect(0, 0, W, H); }
   cx.save(); cx.strokeStyle = 'rgba(255,255,255,.25)'; cx.setLineDash([12, 12]); cx.lineWidth = 3;
   cx.beginPath(); cx.moveTo(W / 2, 0); cx.lineTo(W / 2, H); cx.stroke(); cx.restore();
