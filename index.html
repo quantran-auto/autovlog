@@ -2054,6 +2054,9 @@ dialog.pick::backdrop{background:rgba(0,0,0,.6)}
 .pick .segs{display:flex;flex-wrap:wrap;gap:6px}.pick .segs:empty::before{content:"Chưa chọn đoạn nào.";color:var(--muted);font-size:13px}
 .pick .segs button{font-family:var(--f-mono);font-size:13px;padding:6px 10px;background:color-mix(in srgb,var(--gold) 30%,var(--surface))}
 .pick .row button{flex:1 1 auto}
+.pick .slide{width:100%;height:36px;accent-color:var(--accent);margin:0}
+.pick .qbar{height:40px;cursor:grab}.pick .qbar .sel{background:color-mix(in srgb,var(--gold) 55%,transparent);border-color:var(--gold)}
+.pick details .in2{display:flex;flex-direction:column;gap:10px;padding-top:10px}
 .pick .foot{position:sticky;bottom:0;background:var(--surface);padding:8px 0 calc(4px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line)}
 .clip.bad .name{color:var(--danger)}
 .stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
@@ -2257,8 +2260,8 @@ async function handleLong(c) {
   const at = S.clips.indexOf(c); if (at < 0) return;
   if (r === 'del') { S.clips.splice(at, 1); renderClips(); return; }
   if (r === 'auto') { renderClips(); await autoSplit(c); return; }
-  const parts = r.map(([a, z], i) => Object.assign({}, c, { id: ++S.seq, name: r.length > 1 ? `${c.name} · đoạn ${i + 1}` : c.name,
-    tin: a, tout: z, manual: true, gio: '', cau: '', loading: false }));
+  const parts = r.map(([a, z, q], i) => Object.assign({}, c, { id: ++S.seq, name: r.length > 1 ? `${c.name} · đoạn ${i + 1}` : c.name,
+    tin: a, tout: z, manual: !q, cut: !!q, gio: '', cau: '', loading: false }));
   S.clips.splice(at, 1, ...parts);
   for (const p2 of parts) await makeThumb(p2, p2.tin + 0.1);
   renderClips();
@@ -2268,17 +2271,23 @@ function pickSegments(c) {
     const dlg = document.createElement('dialog'); dlg.className = 'pick';
     dlg.innerHTML = `<div class="in">
       <h3></h3>
-      <p class="hint">Clip dài hơn ${LONG_S} giây. Tua tới chỗ muốn dùng, đặt đầu và cuối rồi bấm "Thêm đoạn". Chọn được nhiều đoạn, mỗi đoạn là 1 cảnh.</p>
+      <p class="hint">Clip dài hơn ${LONG_S} giây. Kéo thanh trượt để chọn ${LONG_S} giây cần dùng.</p>
       <video playsinline controls preload="auto"></video>
-      <div class="tbar" title="Bấm để tua"></div>
+      <div class="tbar qbar"><i class="sel"></i><i class="ph"></i></div>
+      <input type="range" class="slide" min="0" max="${Math.max(0, c.dur - LONG_S).toFixed(1)}" step="0.1" value="0" aria-label="Vị trí đoạn ${LONG_S} giây">
+      <span class="hint qtxt"></span>
+      <button class="primary" data-p="q">✓ Dùng đoạn ${LONG_S} giây này</button>
+      <details><summary>Hoặc chọn nhiều đoạn ngắn</summary><div class="in2">
+      <div class="tbar mbar" title="Bấm để tua"></div>
       <div class="row"><button data-p="in">⟦ Đầu tại đây</button><button data-p="out">Cuối tại đây ⟧</button></div>
       <div class="row"><button data-p="play">▶ Xem đoạn</button><button class="gold" data-p="add">＋ Thêm đoạn</button></div>
       <span class="hint cur"></span>
       <div class="segs" aria-label="Các đoạn đã chọn"></div>
-      <div class="row foot"><button data-p="del">Bỏ clip này</button><button data-p="auto">⚡ Để app tự cắt</button><button class="primary" data-p="done" disabled>Xong</button></div>
+      <button class="primary" data-p="done" disabled>Xong</button></div></details>
+      <div class="row foot"><button data-p="del">Bỏ clip này</button><button data-p="auto">⚡ Để app tự cắt</button></div>
     </div>`;
     dlg.querySelector('h3').textContent = `Chọn đoạn: ${c.name} (${fmtS(c.dur)})`;
-    const v = dlg.querySelector('video'), bar = dlg.querySelector('.tbar'), segsEl = dlg.querySelector('.segs');
+    const v = dlg.querySelector('video'), bar = dlg.querySelector('.mbar'), segsEl = dlg.querySelector('.segs');
     const segs = []; let a = 0, z = Math.min(c.dur, sceneLen()), loop = false;
     v.src = c.url;
     const pct = t => (100 * t / c.dur) + '%';
@@ -2291,7 +2300,21 @@ function pickSegments(c) {
         b.setAttribute('aria-label', 'Bỏ đoạn ' + (k + 1)); b.onclick = () => { segs.splice(k, 1); draw(); }; segsEl.appendChild(b); });
       const done = dlg.querySelector('[data-p=done]'); done.disabled = !segs.length; done.textContent = segs.length ? `Xong (${segs.length} đoạn)` : 'Xong';
     };
-    v.addEventListener('timeupdate', () => { const ph = bar.querySelector('.ph'); if (ph) ph.style.left = pct(v.currentTime);
+    // thanh truot nhanh: 1 doan dai dung LONG_S giay
+    const qbar = dlg.querySelector('.qbar'), qsel = qbar.querySelector('.sel'), qph = qbar.querySelector('.ph'), slide = dlg.querySelector('.slide');
+    let qa = 0; const QL = Math.min(LONG_S, c.dur);
+    const qdraw = () => { qsel.style.left = pct(qa); qsel.style.width = pct(QL);
+      dlg.querySelector('.qtxt').textContent = `Đoạn chọn: ${fmtS(qa)} → ${fmtS(qa + QL)} (${QL.toFixed(0)} giây)`; };
+    let sk = 0; slide.addEventListener('input', () => { qa = +slide.value; qdraw(); cancelAnimationFrame(sk); sk = requestAnimationFrame(() => { v.currentTime = qa; }); });
+    let qdrag = false;   // keo thang khung vang tren thanh
+    const qto = ev => { const r = qbar.getBoundingClientRect(); qa = clamp(clamp((ev.clientX - r.left) / r.width) * c.dur - QL / 2, 0, c.dur - QL); slide.value = qa; qdraw();
+      cancelAnimationFrame(sk); sk = requestAnimationFrame(() => { v.currentTime = qa; }); };
+    qbar.style.touchAction = 'none';
+    qbar.addEventListener('pointerdown', ev => { qdrag = true; qbar.setPointerCapture(ev.pointerId); qto(ev); });
+    qbar.addEventListener('pointermove', ev => { if (qdrag) qto(ev); });
+    qbar.addEventListener('pointerup', () => { qdrag = false; });
+    qbar.addEventListener('pointercancel', () => { qdrag = false; });
+    v.addEventListener('timeupdate', () => { const ph = bar.querySelector('.ph'); if (ph) ph.style.left = pct(v.currentTime); qph.style.left = pct(v.currentTime);
       if (loop && v.currentTime >= z) { v.pause(); loop = false; } });
     bar.addEventListener('click', ev => { const r = bar.getBoundingClientRect(); v.currentTime = clamp((ev.clientX - r.left) / r.width) * c.dur; });
     const close = r => { v.pause(); v.removeAttribute('src'); v.load(); dlg.close(); dlg.remove(); resolve(r); };
@@ -2303,12 +2326,13 @@ function pickSegments(c) {
       if (p === 'out') { z = Math.max(t, 0.5); if (a >= z - 0.5) a = Math.max(0, z - L); }
       if (p === 'play') { v.currentTime = a; loop = true; v.play().catch(() => {}); }
       if (p === 'add') { segs.push([a, z]); segs.sort((x, y) => x[0] - y[0]); a = Math.min(z, c.dur - 0.5); z = Math.min(c.dur, a + L); v.currentTime = a; }
+      if (p === 'q') return close([[qa, qa + QL, 'q']]);
       if (p === 'done' && segs.length) return close(segs.slice());
       if (p === 'auto') return close('auto');
       if (p === 'del') return close('del');
       draw();
     });
-    document.body.appendChild(dlg); dlg.showModal(); draw();
+    document.body.appendChild(dlg); dlg.showModal(); draw(); qdraw();
   });
 }
 
@@ -2386,6 +2410,7 @@ async function loadInto(c) {
 
 const fmtS = s => { const m = Math.floor(s / 60); return m + ':' + (s - m * 60).toFixed(1).padStart(4, '0'); };
 function rangeText(c) {
+  if (!c.manual && c.cut) return `Đoạn ${fmtS(c.tin)} → ${fmtS(c.tout)}: app tự lấy đoạn giữa`;
   return c.manual ? `Dùng ${fmtS(c.tin)} → ${fmtS(c.tout)} (${(c.tout - c.tin).toFixed(1)} giây)` : 'Cả clip: app tự lấy đoạn giữa';
 }
 async function makeThumb(c, t) {
