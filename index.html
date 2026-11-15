@@ -2017,6 +2017,7 @@ button.icon{padding:4px 8px;font-size:13px;border-radius:8px}
 .clip.bad .meta .name:last-child{white-space:normal;color:var(--danger)}
 .wave{width:100%;height:56px;display:block;border-radius:8px;background:var(--sunk);touch-action:none;cursor:grab}
 .tldock{position:sticky;bottom:0;z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:12px 12px 0 0;box-shadow:0 -6px 20px rgba(0,0,0,.12);padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:6px;min-width:0}
+@media (max-width:760px),(pointer:coarse){.tldock{display:none!important}}
 .tlbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tlbar .sp{flex:1}.tlbar strong{font-family:var(--f-display)}
 .tlbody{display:grid;grid-template-columns:40px minmax(0,1fr);gap:4px}
 .tllabels{position:relative;font-size:11px;color:var(--muted);font-weight:600}.tllabels span{position:absolute;left:0}
@@ -2737,7 +2738,9 @@ function movePlayhead(t, follow) {
 }
 let tlTimer; function tlDirty() { clearTimeout(tlTimer); tlTimer = setTimeout(() => { if (S.tl && !S.busy) { try { prepLayouts(); } catch (e) {} drawTimeline(); } }, 300); }
 function drawTimeline() {
-  const dock = $('tlDock'), tl = S.tl; dock.hidden = !tl || IS_PHONE;   // dong thoi gian chi tren may tinh if (!tl || $('tlBody').hidden) return;
+  const dock = $('tlDock'), tl = S.tl; const small = IS_PHONE || matchMedia('(max-width:760px),(pointer:coarse)').matches;
+  dock.hidden = !tl || small;   // dong thoi gian chi tren may tinh
+  if (small || !tl || $('tlBody').hidden) return;
   const wrap = $('tlWrap'), vw = wrap.clientWidth || 600, dpr = Math.min(2, devicePixelRatio || 1);
   const fit = Math.max(8, (vw - 8) / tl.end);
   TL.zoom = clamp(TL.zoom, 1, Math.max(1, 15000 / dpr / (fit * tl.end)));
