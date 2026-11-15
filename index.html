@@ -2033,6 +2033,11 @@ body.std .pro-only{display:none!important}
 .chip:hover{border-color:var(--accent)}
 .chip.ai{background:color-mix(in srgb,var(--gold) 22%,var(--surface))}
 .clip .trim{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+.frm{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;padding-top:4px}
+.frm canvas{width:162px;height:288px;border-radius:8px;background:#000;cursor:grab;flex:none}
+.frm .fctl{display:flex;flex-direction:column;gap:8px;flex:1 1 160px;min-width:0}
+.frm label{display:flex;align-items:center;gap:6px}.frm input[type=range]{flex:1;min-width:60px;accent-color:var(--accent)}
+.frm output{font-family:var(--f-mono);min-width:42px;text-align:right}
 .clip .adj{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;font-size:12px;color:var(--muted)}
 .clip .adj label,.clip .adj .g{display:flex;align-items:center;gap:6px;flex:1 1 150px;min-width:0}
 .clip .adj input[type=range]{flex:1;min-width:60px;accent-color:var(--accent)}
@@ -2137,7 +2142,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
           <label class="check"><input type="checkbox" id="upper" checked> Viết HOA câu từng cảnh</label>
           <label class="check">Cảnh cuối của hook giữ <input type="number" id="holdIn" value="2.5" min="2" max="10" step="0.5" style="width:72px"> giây để người xem đọc tiêu đề + tập</label>
         </div>
-        <p class="hint">Mỗi cảnh có 🔍 phóng to/thu nhỏ khung hình và 🔇/🔊 âm lượng tiếng gốc (mặc định tắt, chỉ nhạc). Hook chạy các cảnh theo đúng thứ tự 1 → cuối, cảnh cuối cùng đứng lâu (tối thiểu 2 giây). Hiệu ứng: chữ cái tiêu đề bay vào, phụ đề gõ từng chữ, vạch tia lấp lánh, số tập nảy lên. Khung đầu tiên hiện đủ chữ để làm ảnh bìa.</p>
+        <p class="hint">Mỗi cảnh: 🔇/🔊 âm lượng tiếng gốc (mặc định tắt, chỉ nhạc); zoom và chỉnh khung hình nằm trong "✂ Chọn đoạn". Hook chạy các cảnh theo đúng thứ tự 1 → cuối, cảnh cuối cùng đứng lâu (tối thiểu 2 giây). Hiệu ứng: chữ cái tiêu đề bay vào, phụ đề gõ từng chữ, vạch tia lấp lánh, số tập nảy lên. Khung đầu tiên hiện đủ chữ để làm ảnh bìa.</p>
       </section>
 
       <section class="card pro-only" aria-labelledby="h3s">
@@ -2283,6 +2288,7 @@ function pickSegments(c) {
       <input type="range" class="slide" min="0" max="${Math.max(0, c.dur - LONG_S).toFixed(1)}" step="0.1" value="0" aria-label="Vị trí đoạn ${LONG_S} giây">
       <span class="hint qtxt"></span>
       <button class="primary" data-p="q">✓ Dùng đoạn ${LONG_S} giây này</button>
+      <details class="frmd"><summary>🔍 Zoom / chỉnh khung hình</summary></details>
       <details><summary>Hoặc chọn nhiều đoạn ngắn</summary><div class="in2">
       <div class="tbar mbar" title="Bấm để tua"></div>
       <div class="row"><button data-p="in">⟦ Đầu tại đây</button><button data-p="out">Cuối tại đây ⟧</button></div>
@@ -2296,6 +2302,7 @@ function pickSegments(c) {
     const v = dlg.querySelector('video'), bar = dlg.querySelector('.mbar'), segsEl = dlg.querySelector('.segs');
     const segs = []; let a = 0, z = Math.min(c.dur, sceneLen()), loop = false;
     v.src = c.url;
+    dlg.querySelector('.frmd').appendChild(frameEditor(c, v));
     const pct = t => (100 * t / c.dur) + '%';
     const draw = () => {
       bar.innerHTML = segs.map(([x, y]) => `<i class="got" style="left:${pct(x)};width:${pct(y - x)}"></i>`).join('')
@@ -2360,10 +2367,11 @@ async function seek(v, t) {
   if (Math.abs(v.currentTime - t) < 0.002 && v.readyState >= 2) return;
   const p = once(v, 'seeked'); v.currentTime = t; await p;
 }
-function drawCover(ctx, src, sw, sh, w = W, h = H, z = 1) {
-  if (z < 1) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h); }        // thu nho: phan trong to den
+// z = zoom (1 = vua khung), px/py = doi khung theo ti le be rong/cao khung ra
+function drawCover(ctx, src, sw, sh, w = W, h = H, z = 1, px = 0, py = 0) {
   const s = Math.max(w / sw, h / sh) * z, dw = sw * s, dh = sh * s;
-  ctx.drawImage(src, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  if (z < 1 || px || py) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, w, h); }
+  ctx.drawImage(src, (w - dw) / 2 + px * w, (h - dh) / 2 + py * h, dw, dh);
 }
 // Nap video chac hon: cho metadata truoc, neu trinh duyet (iPhone/Android) chua giai ma khung dau thi "kich" bang play/pause.
 async function loadVid(v, ms) {
@@ -2424,7 +2432,7 @@ async function makeThumb(c, t) {
   try {
     await seek(c.el, t);
     const cv2 = document.createElement('canvas'); cv2.width = 180; cv2.height = 320;
-    drawCover(cv2.getContext('2d'), c.el, c.w, c.h, 180, 320, c.zoom || 1);
+    drawCover(cv2.getContext('2d'), c.el, c.w, c.h, 180, 320, c.zoom || 1, c.px || 0, c.py || 0);
     c.thumb = cv2.toDataURL('image/jpeg', 0.7);
   } catch (e) {}
 }
@@ -2437,6 +2445,41 @@ async function dupClip(c) {
   S.clips.splice(S.clips.indexOf(c) + 1, 0, n);
   S.trimId = n.id; renderClips(); rebuild();
 }
+/* ---------- zoom + doi khung 9:16 (nam trong phan chon doan) ---------- */
+function frameEditor(c, v, onChange) {
+  const box = document.createElement('div'); box.className = 'frm';
+  const FW = 216, FH = 384;
+  box.innerHTML = `<canvas width="${FW}" height="${FH}" aria-label="Khung hình 9:16, kéo để dời khung"></canvas>
+    <div class="fctl"><b>Khung hình 9:16</b><span class="hint">Kéo ảnh để dời khung, chụm 2 ngón hoặc kéo thanh để phóng to/thu nhỏ.</span>
+      <label>🔍<input type="range" min="50" max="250" step="5" aria-label="Zoom khung hình"><output></output></label>
+      <button type="button" data-fr="reset">Đặt lại khung</button></div>`;
+  const cvF = box.querySelector('canvas'), g = cvF.getContext('2d'), zr = box.querySelector('input'), out = box.querySelector('output');
+  const lim = () => { if (!c.w) return; const s2 = Math.max(W / c.w, H / c.h) * (c.zoom || 1), ex = Math.abs(c.w * s2 - W) / 2 / W, ey = Math.abs(c.h * s2 - H) / 2 / H;
+    c.px = clamp(c.px || 0, -ex, ex); c.py = clamp(c.py || 0, -ey, ey); };
+  const draw = () => { g.fillStyle = '#000'; g.fillRect(0, 0, FW, FH); if (v.readyState >= 2) drawCover(g, v, v.videoWidth, v.videoHeight, FW, FH, c.zoom || 1, c.px || 0, c.py || 0);
+    g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 1; g.beginPath();
+    for (const k of [1, 2]) { g.moveTo(FW * k / 3, 0); g.lineTo(FW * k / 3, FH); g.moveTo(0, FH * k / 3); g.lineTo(FW, FH * k / 3); } g.stroke();
+    zr.value = Math.round(100 * (c.zoom || 1)); out.textContent = zr.value + '%'; };
+  let ct; const changed = () => { S.stills = null; idleKey = ''; clearTimeout(ct); ct = setTimeout(() => onChange && onChange(), 250); };
+  const setZoom = z => { c.zoom = Math.round(clamp(z, 0.5, 2.5) * 100) / 100; lim(); draw(); changed(); };
+  zr.addEventListener('input', () => setZoom(zr.value / 100));
+  box.querySelector('[data-fr=reset]').addEventListener('click', () => { c.zoom = 1; c.px = 0; c.py = 0; draw(); changed(); });
+  const pts = new Map(); let st = null;
+  const start = () => { const r = cvF.getBoundingClientRect(), P = [...pts.values()];
+    st = { px: c.px || 0, py: c.py || 0, z: c.zoom || 1, x: P[0][0], y: P[0][1], rw: r.width, rh: r.height, d: P.length > 1 ? Math.hypot(P[0][0] - P[1][0], P[0][1] - P[1][1]) : 0 }; };
+  cvF.style.touchAction = 'none';
+  cvF.addEventListener('pointerdown', e => { cvF.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); start(); });
+  cvF.addEventListener('pointermove', e => { if (!st || !pts.has(e.pointerId)) return; pts.set(e.pointerId, [e.clientX, e.clientY]); const P = [...pts.values()];
+    if (P.length > 1 && st.d) { setZoom(st.z * Math.hypot(P[0][0] - P[1][0], P[0][1] - P[1][1]) / st.d); return; }
+    c.px = st.px + (P[0][0] - st.x) / st.rw; c.py = st.py + (P[0][1] - st.y) / st.rh; lim(); draw(); changed(); });
+  const up = e => { pts.delete(e.pointerId); if (pts.size) start(); else st = null; };
+  cvF.addEventListener('pointerup', up); cvF.addEventListener('pointercancel', up);
+  let raf = 0; const loop = () => { draw(); if (!v.paused && box.isConnected) raf = requestAnimationFrame(loop); };
+  ['loadeddata', 'seeked', 'timeupdate'].forEach(ev => v.addEventListener(ev, draw));
+  v.addEventListener('play', () => { cancelAnimationFrame(raf); loop(); });
+  draw();
+  return box;
+}
 function trimEditor(c) {
   const box = document.createElement('div'); box.className = 'trimbox';
   box.innerHTML = `<p class="hint">Phát hoặc bấm lên thanh bên dưới để tìm chỗ, rồi đặt điểm đầu và điểm cuối. Đoạn được chọn tô màu xanh.</p>
@@ -2447,6 +2490,8 @@ function trimEditor(c) {
     <div class="row"><label class="f">Đầu (giây)<input type="number" step="0.1" min="0" data-t="tin" id="tin${c.id}"></label>
       <label class="f">Cuối (giây)<input type="number" step="0.1" min="0" data-t="tout" id="tout${c.id}"></label><span class="hint len"></span></div>`;
   const v = box.querySelector('video'), bar = box.querySelector('.tbar'), sel = box.querySelector('.sel'), ph = box.querySelector('.ph');
+  box.appendChild(frameEditor(c, v, () => makeThumb(c, c.manual ? c.tin + 0.1 : (c.tin + c.tout) / 2).then(() => {
+    const im = box.previousElementSibling && box.previousElementSibling.querySelector('img'); if (im && c.thumb) im.src = c.thumb; })));
   const iIn = box.querySelector('[data-t=tin]'), iOut = box.querySelector('[data-t=tout]');
   let loop = false, rb;
   v.src = c.url;
@@ -2488,8 +2533,7 @@ function renderClips() {
       <div class="meta"><div class="name"><b></b> · ${c.ok ? c.dur.toFixed(1) + ' giây' : c.loading ? 'đang nạp…' : ''}</div>
       ${c.ok ? `<div class="ins"><input class="gio" type="text" placeholder="07:35" aria-label="Giờ cảnh ${i + 1}" id="g${c.id}"><input type="text" placeholder="Câu cho cảnh này" aria-label="Câu cảnh ${i + 1}" id="c${c.id}"></div>
       <div class="trim"><span class="rng"></span><button class="icon" data-a="trim">✂ Chọn đoạn</button><button class="icon" data-a="auto">⚡ Tự cắt</button><button class="icon" data-a="dup">＋ Thêm đoạn từ clip này</button></div>
-      <div class="adj"><label title="Phóng to / thu nhỏ khung hình">🔍<input type="range" class="zm" min="50" max="250" step="5" aria-label="Zoom khung hình cảnh ${i + 1}"><output class="zv"></output></label>
-        <span class="g" title="Âm lượng tiếng gốc của clip"><button type="button" class="icon mute" data-a="mute"></button><input type="range" class="vl" min="0" max="200" step="10" aria-label="Âm lượng cảnh ${i + 1}"><output class="vv"></output></span></div>` : `<div class="name"></div>`}</div>
+      <div class="adj"><span class="g" title="Âm lượng tiếng gốc của clip"><button type="button" class="icon mute" data-a="mute"></button><input type="range" class="vl" min="0" max="200" step="10" aria-label="Âm lượng cảnh ${i + 1}"><output class="vv"></output></span></div>` : `<div class="name"></div>`}</div>
       <div class="acts">${!c.ok && !c.loading ? '<button class="icon" data-a="retry" aria-label="Thử lại">↻</button>' : ''}<button class="icon" data-a="del" aria-label="Bỏ clip">✕</button></div>`;
     d.querySelector('.name b').textContent = c.name;
     const ord = d.querySelector('.ord');
@@ -2509,13 +2553,10 @@ function renderClips() {
       g.addEventListener('input', () => { c.gio = g.value; tlDirty(); });
       q.addEventListener('input', () => { c.cau = q.value; tlDirty(); });
       d.querySelector('.rng').textContent = rangeText(c);
-      const zm = d.querySelector('.zm'), vl = d.querySelector('.vl'), mb = d.querySelector('.mute');
-      const showA = () => { d.querySelector('.zv').textContent = Math.round(100 * (c.zoom || 1)) + '%';
-        const v = Math.round(100 * (c.vol || 0)); d.querySelector('.vv').textContent = v ? v + '%' : 'Tắt';
+      const vl = d.querySelector('.vl'), mb = d.querySelector('.mute');
+      const showA = () => { const v = Math.round(100 * (c.vol || 0)); d.querySelector('.vv').textContent = v ? v + '%' : 'Tắt';
         mb.textContent = v ? '🔊' : '🔇'; mb.setAttribute('aria-label', v ? 'Tắt tiếng clip' : 'Bật tiếng clip'); };
-      zm.value = Math.round(100 * (c.zoom || 1)); vl.value = Math.round(100 * (c.vol || 0)); showA();
-      let zt; zm.addEventListener('input', () => { c.zoom = zm.value / 100; showA(); S.stills = null; idleKey = '';
-        clearTimeout(zt); zt = setTimeout(() => makeThumb(c, c.manual ? c.tin + 0.1 : (c.tin + c.tout) / 2).then(() => { const im = d.querySelector('img'); if (im && c.thumb) im.src = c.thumb; }), 250); });
+      vl.value = Math.round(100 * (c.vol || 0)); showA();
       vl.addEventListener('input', () => { c.vol = vl.value / 100; if (c.vol) c._lastVol = c.vol; showA(); S.mix = null; });
       c._mute = () => { c.vol = c.vol ? 0 : (c._lastVol || 1); vl.value = Math.round(100 * c.vol); showA(); S.mix = null; };
     }
@@ -3140,7 +3181,7 @@ function drawStamp(ctx, t, seg, SL) {
 function drawFrame(ctx, t, src, seg) {
   const tl = S.tl, c = S._cfg;
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
-  if (src) drawCover(ctx, src, src.videoWidth || src.width, src.videoHeight || src.height, W, H, seg && src instanceof HTMLVideoElement ? (seg.clip.zoom || 1) : 1);
+  if (src) drawCover(ctx, src, src.videoWidth || src.width, src.videoHeight || src.height, W, H, ...(seg && src instanceof HTMLVideoElement ? [seg.clip.zoom || 1, seg.clip.px || 0, seg.clip.py || 0] : []));
   if (S.sticker && t < tl.hookEnd) {
     const sw = 230, sh = sw * S.sticker.naturalHeight / S.sticker.naturalWidth;
     ctx.drawImage(S.sticker, W - sw - 50, 230 + 12 * Math.sin(t * 7), sw, sh);
@@ -3158,7 +3199,7 @@ async function prepStills(onP) {
   for (let i = 0; i < ms.length; i++) {
     const s = ms[i]; await seek(s.clip.el, s.ss);
     const oc = document.createElement('canvas'); oc.width = W; oc.height = H;
-    drawCover(oc.getContext('2d'), s.clip.el, s.clip.w, s.clip.h, W, H, s.clip.zoom || 1);
+    drawCover(oc.getContext('2d'), s.clip.el, s.clip.w, s.clip.h, W, H, s.clip.zoom || 1, s.clip.px || 0, s.clip.py || 0);
     s.still = oc; st.push(oc); onP && onP(i / ms.length);
   }
   S.stills = st;
@@ -3430,7 +3471,7 @@ $('btnCover').addEventListener('click', async () => {
   const c = cfg(), L = hookLayout(c, 1.97, 0.133), oc = document.createElement('canvas'); oc.width = W; oc.height = H;
   const g = oc.getContext('2d'), s0 = S.tl && S.tl.segs[0], el = s0 && s0.clip.el;
   g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
-  if (el && el.readyState >= 2) { await seek(el, s0.ss).catch(() => {}); drawCover(g, el, s0.clip.w, s0.clip.h, W, H, s0.clip.zoom || 1); }
+  if (el && el.readyState >= 2) { await seek(el, s0.ss).catch(() => {}); drawCover(g, el, s0.clip.w, s0.clip.h, W, H, s0.clip.zoom || 1, s0.clip.px || 0, s0.clip.py || 0); }
   else { const gr = g.createLinearGradient(0, 0, W, H); gr.addColorStop(0, '#2E4A3F'); gr.addColorStop(1, '#0E1A14'); g.fillStyle = gr; g.fillRect(0, 0, W, H); }
   if (S.sticker) g.drawImage(S.sticker, W - 280, 230, 230, 230 * S.sticker.naturalHeight / S.sticker.naturalWidth);
   drawHook(g, 0.03, L, c);
@@ -3548,7 +3589,7 @@ $('btnDraftSave').addEventListener('click', async () => {
     for (const [k, f] of files) if (!have.has(k)) { try { await idb.put('files', k, f); } catch (e) { miss++; } }
     for (const k of have) if (!files.has(k)) await idb.del('files', k).catch(() => {});
     const meta = { at: Date.now(), v: 1,
-      clips: cl.map(c => ({ k: fKey(c.file), name: c.name, tin: c.tin, tout: c.tout, manual: !!c.manual, cut: !!c.cut, gio: c.gio, cau: c.cau, zoom: c.zoom || 1, vol: c.vol || 0 })),
+      clips: cl.map(c => ({ k: fKey(c.file), name: c.name, tin: c.tin, tout: c.tout, manual: !!c.manual, cut: !!c.cut, gio: c.gio, cau: c.cau, zoom: c.zoom || 1, px: c.px || 0, py: c.py || 0, vol: c.vol || 0 })),
       music: S.musFile ? fKey(S.musFile) : null, musShift: S.musShift || 0,
       fields: Object.fromEntries(DRAFT_F.map(id => [id, $(id).value])), checks: Object.fromEntries(DRAFT_C.map(id => [id, $(id).checked])),
       off: S.off, scl: S.scl };
@@ -3582,7 +3623,7 @@ $('btnDraftOpen').addEventListener('click', async () => {
         await loadInto(b0); base.set(o.k, b0);
       }
       if (!b0.ok) { missing.push(o.name); continue; }
-      const c = Object.assign({}, b0, { id: ++S.seq, name: o.name, tin: clamp(o.tin, 0, b0.dur), tout: clamp(o.tout, 0, b0.dur), manual: o.manual, cut: o.cut, gio: o.gio || '', cau: o.cau || '', zoom: o.zoom || 1, vol: o.vol || 0 });
+      const c = Object.assign({}, b0, { id: ++S.seq, name: o.name, tin: clamp(o.tin, 0, b0.dur), tout: clamp(o.tout, 0, b0.dur), manual: o.manual, cut: o.cut, gio: o.gio || '', cau: o.cau || '', zoom: o.zoom || 1, px: o.px || 0, py: o.py || 0, vol: o.vol || 0 });
       S.clips.push(c); await makeThumb(c, c.manual ? c.tin + 0.1 : (c.tin + c.tout) / 2); renderClips();
     }
     box.hidden = true; idleKey = ''; analyse(); rebuild();
@@ -3689,7 +3730,7 @@ function drawEdit() {
   const SL = stampLayout({ clip: { gio: '07:35', cau: 'Câu mốc giờ mẫu' }, t0: 0, t1: 9 }, c);
   const s0 = S.tl && S.tl.segs[0], el = s0 && s0.clip.el;
   cx.fillStyle = '#000'; cx.fillRect(0, 0, W, H);
-  if (el && el.readyState >= 2) drawCover(cx, el, s0.clip.w, s0.clip.h, W, H, s0.clip.zoom || 1);
+  if (el && el.readyState >= 2) drawCover(cx, el, s0.clip.w, s0.clip.h, W, H, s0.clip.zoom || 1, s0.clip.px || 0, s0.clip.py || 0);
   else { const g = cx.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#2E4A3F'); g.addColorStop(1, '#0E1A14'); cx.fillStyle = g; cx.fillRect(0, 0, W, H); }
   cx.save(); cx.strokeStyle = 'rgba(255,255,255,.25)'; cx.setLineDash([12, 12]); cx.lineWidth = 3;
   cx.beginPath(); cx.moveTo(W / 2, 0); cx.lineTo(W / 2, H); cx.stroke(); cx.restore();
