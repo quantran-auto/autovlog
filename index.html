@@ -2043,6 +2043,17 @@ body.std .pro-only{display:none!important}
 .tbar{position:relative;height:30px;background:var(--bg);border:1px solid var(--line);border-radius:6px;cursor:pointer;overflow:hidden}
 .tbar .sel{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--accent) 35%,transparent);border-left:3px solid var(--accent);border-right:3px solid var(--accent)}
 .tbar .ph{position:absolute;top:0;bottom:0;width:2px;background:var(--fg)}
+.tbar .got{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--gold) 70%,transparent)}
+dialog.pick{width:min(560px,100vw - 16px);max-height:calc(100dvh - 16px);padding:0;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--fg)}
+dialog.pick::backdrop{background:rgba(0,0,0,.6)}
+.pick .in{display:flex;flex-direction:column;gap:10px;padding:14px}
+.pick h3{margin:0;font-family:var(--f-display);font-size:17px;overflow-wrap:anywhere}
+.pick video{display:block;width:100%;max-height:42dvh;border-radius:8px;background:#000}
+.pick .tbar{height:40px}
+.pick .segs{display:flex;flex-wrap:wrap;gap:6px}.pick .segs:empty::before{content:"Chưa chọn đoạn nào.";color:var(--muted);font-size:13px}
+.pick .segs button{font-family:var(--f-mono);font-size:13px;padding:6px 10px;background:color-mix(in srgb,var(--gold) 30%,var(--surface))}
+.pick .row button{flex:1 1 auto}
+.pick .foot{position:sticky;bottom:0;background:var(--surface);padding:8px 0 calc(4px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line)}
 .clip.bad .name{color:var(--danger)}
 .stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
 .stat div{background:var(--sunk);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column}
@@ -2091,7 +2102,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
           </label>
         </div>
         <div class="row"><button id="btnClear" hidden>Xoá hết clip</button></div>
-        <label class="check"><input type="checkbox" id="autoCut" checked> Tự cắt video dài hơn 20 giây thành các đoạn đúng độ dài cảnh (dò chỗ chuyển cảnh)</label>
+        <p class="hint">Clip dài hơn 30 giây: app hiện bảng để bạn chọn đoạn cần dùng trước khi đưa vào danh sách.</p>
         <div id="loadBox" hidden><div class="bar"><i id="loadProg"></i></div><span class="hint" id="loadTxt"></span></div>
         <p class="msg" id="cutMsg"></p>
         <div class="clips" id="clipList"></div>
@@ -2169,8 +2180,8 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
     </aside>
   </div>
   <section class="tldock" id="tlDock" hidden aria-label="Dòng thời gian">
-    <div class="tlbar"><strong>Dòng thời gian</strong><span class="hint" id="tlInfo"></span><span class="sp"></span><button class="icon" id="tlOut" aria-label="Thu nhỏ">−</button><button class="icon" id="tlIn" aria-label="Phóng to">＋</button><button class="icon" id="tlFit">Vừa khung</button><button class="icon" id="tlHide">Hiện</button></div>
-    <div class="tlbody" id="tlBody" hidden><div class="tllabels"><span style="top:34px">Hình</span><span style="top:78px">Chữ</span><span style="top:108px">Nhạc</span><span style="top:136px">SFX</span></div>
+    <div class="tlbar"><strong>Dòng thời gian</strong><span class="hint" id="tlInfo"></span><span class="sp"></span><button class="icon" id="tlOut" aria-label="Thu nhỏ">−</button><button class="icon" id="tlIn" aria-label="Phóng to">＋</button><button class="icon" id="tlFit">Vừa khung</button><button class="icon" id="tlHide">Ẩn</button></div>
+    <div class="tlbody" id="tlBody"><div class="tllabels"><span style="top:34px">Hình</span><span style="top:78px">Chữ</span><span style="top:108px">Nhạc</span><span style="top:136px">SFX</span></div>
       <div class="tlwrap" id="tlWrap"><canvas id="tlCanvas"></canvas><div class="tlhead" id="tlHead"></div></div></div>
   </section>
 </div>
@@ -2216,7 +2227,7 @@ function natural(a, b) { return a.localeCompare(b, undefined, { numeric: true, s
 
 async function addFiles(files) {
   files.sort((a, b) => natural(a.name, b.name));
-  const longs = [], vids = files.filter(f => (f.type || '').startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv)$/i.test(f.name));
+  const vids = files.filter(f => (f.type || '').startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv)$/i.test(f.name));
   let done = 0; const box = $('loadBox');
   const step = (name) => { const n = vids.length; box.hidden = !n; $('loadProg').style.width = (n ? 100 * done / n : 0) + '%';
     $('loadTxt').textContent = done < n ? `Đang nạp clip ${done + 1}/${n}: ${name}…` : `Đã nạp ${n} clip.`; };
@@ -2224,13 +2235,80 @@ async function addFiles(files) {
     const t = f.type || '';
     if (t.startsWith('audio/') || /\.(mp3|m4a|wav|aac|flac|ogg)$/i.test(f.name)) { loadMusic(f); continue; }
     if (t === 'image/png') { const img = new Image(); img.src = URL.createObjectURL(f); await img.decode().catch(() => {}); S.sticker = img; continue; }
-    if (vids.includes(f)) { step(f.name); const c = await addClip(f); done++; step(''); if (c && c.ok && c.dur > 20 && $('autoCut').checked) longs.push(c); }
+    if (vids.includes(f)) {
+      step(f.name); const c = await addClip(f); done++; step('');
+      if (c && c.ok && c.dur > LONG_S) await handleLong(c);
+    }
   }
   setTimeout(() => { if (done >= vids.length) box.hidden = true; }, 1500);
   const bad = S.clips.filter(c => !c.ok && !c.loading).length;
   if (bad) msg('cutMsg', `${bad} clip chưa đọc được (viền đỏ). Bấm ↻ để thử lại, hoặc xem lý do ngay dưới tên clip.`, 'err');
   renderClips(); rebuild();
-  for (const c of longs) await autoSplit(c);
+}
+
+/* ---------- clip dai > 30 giay: bat buoc chon doan truoc khi dua vao danh sach ---------- */
+const LONG_S = 30;
+const sceneLen = () => { const b = S.mus ? S.mus.beat : 0.43; return Math.max(4, Math.min(8, Math.round(3 / b / 2) * 2)) * b + 0.2; };
+async function handleLong(c) {
+  c.loading = true; renderClips();
+  const r = await pickSegments(c);
+  c.loading = false;
+  const at = S.clips.indexOf(c); if (at < 0) return;
+  if (r === 'del') { S.clips.splice(at, 1); renderClips(); return; }
+  if (r === 'auto') { renderClips(); await autoSplit(c); return; }
+  const parts = r.map(([a, z], i) => Object.assign({}, c, { id: ++S.seq, name: r.length > 1 ? `${c.name} · đoạn ${i + 1}` : c.name,
+    tin: a, tout: z, manual: true, gio: '', cau: '', loading: false }));
+  S.clips.splice(at, 1, ...parts);
+  for (const p2 of parts) await makeThumb(p2, p2.tin + 0.1);
+  renderClips();
+}
+function pickSegments(c) {
+  return new Promise(resolve => {
+    const dlg = document.createElement('dialog'); dlg.className = 'pick';
+    dlg.innerHTML = `<div class="in">
+      <h3></h3>
+      <p class="hint">Clip dài hơn ${LONG_S} giây. Tua tới chỗ muốn dùng, đặt đầu và cuối rồi bấm "Thêm đoạn". Chọn được nhiều đoạn, mỗi đoạn là 1 cảnh.</p>
+      <video playsinline controls preload="auto"></video>
+      <div class="tbar" title="Bấm để tua"></div>
+      <div class="row"><button data-p="in">⟦ Đầu tại đây</button><button data-p="out">Cuối tại đây ⟧</button></div>
+      <div class="row"><button data-p="play">▶ Xem đoạn</button><button class="gold" data-p="add">＋ Thêm đoạn</button></div>
+      <span class="hint cur"></span>
+      <div class="segs" aria-label="Các đoạn đã chọn"></div>
+      <div class="row foot"><button data-p="del">Bỏ clip này</button><button data-p="auto">⚡ Để app tự cắt</button><button class="primary" data-p="done" disabled>Xong</button></div>
+    </div>`;
+    dlg.querySelector('h3').textContent = `Chọn đoạn: ${c.name} (${fmtS(c.dur)})`;
+    const v = dlg.querySelector('video'), bar = dlg.querySelector('.tbar'), segsEl = dlg.querySelector('.segs');
+    const segs = []; let a = 0, z = Math.min(c.dur, sceneLen()), loop = false;
+    v.src = c.url;
+    const pct = t => (100 * t / c.dur) + '%';
+    const draw = () => {
+      bar.innerHTML = segs.map(([x, y]) => `<i class="got" style="left:${pct(x)};width:${pct(y - x)}"></i>`).join('')
+        + `<i class="sel" style="left:${pct(a)};width:${pct(z - a)}"></i><i class="ph" style="left:${pct(v.currentTime || 0)}"></i>`;
+      dlg.querySelector('.cur').textContent = `Đoạn đang chọn: ${fmtS(a)} → ${fmtS(z)} (${(z - a).toFixed(1)} giây)`;
+      segsEl.innerHTML = '';
+      segs.forEach(([x, y], k) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = `${k + 1}: ${fmtS(x)}–${fmtS(y)} ✕`;
+        b.setAttribute('aria-label', 'Bỏ đoạn ' + (k + 1)); b.onclick = () => { segs.splice(k, 1); draw(); }; segsEl.appendChild(b); });
+      const done = dlg.querySelector('[data-p=done]'); done.disabled = !segs.length; done.textContent = segs.length ? `Xong (${segs.length} đoạn)` : 'Xong';
+    };
+    v.addEventListener('timeupdate', () => { const ph = bar.querySelector('.ph'); if (ph) ph.style.left = pct(v.currentTime);
+      if (loop && v.currentTime >= z) { v.pause(); loop = false; } });
+    bar.addEventListener('click', ev => { const r = bar.getBoundingClientRect(); v.currentTime = clamp((ev.clientX - r.left) / r.width) * c.dur; });
+    const close = r => { v.pause(); v.removeAttribute('src'); v.load(); dlg.close(); dlg.remove(); resolve(r); };
+    dlg.addEventListener('cancel', ev => ev.preventDefault());          // bat buoc chon, khong dong bang Esc
+    dlg.addEventListener('click', ev => {
+      const p = ev.target.dataset && ev.target.dataset.p; if (!p) return;
+      const t = v.currentTime || 0, L = sceneLen();
+      if (p === 'in') { a = Math.min(t, c.dur - 0.5); if (z <= a + 0.5) z = Math.min(c.dur, a + L); }
+      if (p === 'out') { z = Math.max(t, 0.5); if (a >= z - 0.5) a = Math.max(0, z - L); }
+      if (p === 'play') { v.currentTime = a; loop = true; v.play().catch(() => {}); }
+      if (p === 'add') { segs.push([a, z]); segs.sort((x, y) => x[0] - y[0]); a = Math.min(z, c.dur - 0.5); z = Math.min(c.dur, a + L); v.currentTime = a; }
+      if (p === 'done' && segs.length) return close(segs.slice());
+      if (p === 'auto') return close('auto');
+      if (p === 'del') return close('del');
+      draw();
+    });
+    document.body.appendChild(dlg); dlg.showModal(); draw();
+  });
 }
 
 function newVideo(url) {
@@ -2659,7 +2737,7 @@ function movePlayhead(t, follow) {
 }
 let tlTimer; function tlDirty() { clearTimeout(tlTimer); tlTimer = setTimeout(() => { if (S.tl && !S.busy) { try { prepLayouts(); } catch (e) {} drawTimeline(); } }, 300); }
 function drawTimeline() {
-  const dock = $('tlDock'), tl = S.tl; dock.hidden = !tl; if (!tl || $('tlBody').hidden) return;
+  const dock = $('tlDock'), tl = S.tl; dock.hidden = !tl || IS_PHONE;   // dong thoi gian chi tren may tinh if (!tl || $('tlBody').hidden) return;
   const wrap = $('tlWrap'), vw = wrap.clientWidth || 600, dpr = Math.min(2, devicePixelRatio || 1);
   const fit = Math.max(8, (vw - 8) / tl.end);
   TL.zoom = clamp(TL.zoom, 1, Math.max(1, 15000 / dpr / (fit * tl.end)));
