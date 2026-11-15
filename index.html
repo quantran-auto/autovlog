@@ -1984,6 +1984,9 @@ header p{margin:6px 0 0;color:var(--muted);max-width:62ch}
 .drop{border:2px dashed var(--line);border-radius:var(--r);padding:22px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;background:var(--sunk);cursor:pointer;transition:border-color .15s}
 .drop.over,.drop:hover{border-color:var(--accent)}
 .drop strong{font-family:var(--f-display);font-size:16px}
+.drops{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:10px}
+@media (max-width:600px){.drops{grid-template-columns:minmax(0,1fr)}}
+.drop.has{border-style:solid;border-color:var(--accent)}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.02em;flex:1 1 180px;min-width:0}
 input[type=text],input[type=number],textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
@@ -2060,11 +2063,19 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
     <div class="steps">
       <section class="card" aria-labelledby="h1s">
         <h2 id="h1s"><span class="num">1</span>Clip &amp; nhạc</h2>
-        <label class="drop" id="drop" for="fileIn">
-          <strong>Kéo thả clip + 1 file nhạc vào đây</strong>
-          <span class="hint">Hoặc bấm để chọn. Video: mp4, mov. Nhạc: mp3, m4a, wav. Ảnh .png sẽ thành sticker góc phải trong đoạn hook.</span>
-          <input id="fileIn" type="file" multiple accept="video/*,audio/*,image/png" hidden>
-        </label>
+        <div class="drops">
+          <label class="drop" id="drop" for="fileIn">
+            <strong>🎬 Thả clip vào đây</strong>
+            <span class="hint">Hoặc bấm để chọn, chọn nhiều clip một lúc. Thả thêm lần nữa để nối thêm clip. Ảnh .png sẽ thành sticker trong đoạn hook.</span>
+            <input id="fileIn" type="file" multiple accept="video/*,image/png" hidden>
+          </label>
+          <label class="drop" id="dropMus" for="musIn">
+            <strong>🎵 Thả nhạc vào đây</strong>
+            <span class="hint" id="musName">Chưa có nhạc. mp3, m4a, wav. Thả bài khác để đổi nhạc.</span>
+            <input id="musIn" type="file" accept="audio/*,.mp3,.m4a,.wav,.aac" hidden>
+          </label>
+        </div>
+        <div class="row"><button id="btnClear" hidden>Xoá hết clip</button></div>
         <div class="row" id="sampleRow"><span class="hint">Chưa có clip? Thử ngay với bộ mẫu 6 clip:</span>
           <button id="btnSampleA" data-music="nhac_remix.mp3">Mẫu + nhạc remix</button>
           <button id="btnSampleB" data-music="nhac_dreaming-big.mp3">Mẫu + nhạc Mixkit</button></div>
@@ -2179,6 +2190,12 @@ const drop = $('drop');
 ['dragenter', 'dragover'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('over'); }));
 ['dragleave', 'drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('over'); }));
 drop.addEventListener('drop', ev => addFiles([...ev.dataTransfer.files]));
+const dropMus = $('dropMus');
+['dragenter', 'dragover'].forEach(e => dropMus.addEventListener(e, ev => { ev.preventDefault(); dropMus.classList.add('over'); }));
+['dragleave', 'drop'].forEach(e => dropMus.addEventListener(e, ev => { ev.preventDefault(); dropMus.classList.remove('over'); }));
+dropMus.addEventListener('drop', ev => { const f = [...ev.dataTransfer.files].find(x => (x.type || '').startsWith('audio/') || /\.(mp3|m4a|wav|aac|flac|ogg)$/i.test(x.name)); if (f) loadMusic(f); else msg('musMsg', 'Ô này chỉ nhận file nhạc (mp3, m4a, wav).', 'err'); });
+$('musIn').addEventListener('change', ev => { const f = ev.target.files[0]; ev.target.value = ''; if (f) loadMusic(f); });
+$('btnClear').addEventListener('click', () => { if (S.busy) return; S.clips = []; S.outBlob = null; renderClips(); rebuild(); });
 $('fileIn').addEventListener('change', ev => { addFiles([...ev.target.files]); ev.target.value = ''; });
 
 function natural(a, b) { return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }); }
@@ -2332,7 +2349,8 @@ function renderClips() {
     L.appendChild(d);
     if (c.ok && S.trimId === c.id) L.appendChild(trimEditor(c));
   });
-  $('clipHint').hidden = S.clips.length === 0;
+  $('clipHint').hidden = S.clips.length === 0; $('btnClear').hidden = S.clips.length === 0;
+  $('drop').classList.toggle('has', S.clips.length > 0);
 }
 
 /* ---------- tu cat video dai: do chuyen canh, lay doan dung do dai can ---------- */
@@ -2401,6 +2419,7 @@ async function autoSplit(c) {
 /* ---------- nhac: do nhip ---------- */
 async function loadMusic(file) {
   S.musFile = file; S.mus = null; S.music = null; S.mix = null;
+  $('musName').textContent = 'Đang dùng: ' + file.name + ' · thả bài khác để đổi'; $('dropMus').classList.add('has');
   $('sMusic').textContent = file.name.replace(/\.[^.]+$/, '').slice(0, 18);
   msg('musMsg', 'Đang giải mã và đo nhịp nhạc…');
   try {
