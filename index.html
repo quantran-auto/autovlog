@@ -2000,7 +2000,11 @@ button:disabled{opacity:.45;cursor:not-allowed}
 button.icon{padding:4px 8px;font-size:13px;border-radius:8px}
 .clips{display:flex;flex-direction:column;gap:8px}
 .clip{display:grid;grid-template-columns:auto 54px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
-.clip .idx{font-family:var(--f-mono);font-size:12px;color:var(--muted);width:22px;text-align:right}
+.clip .ord{width:46px;padding:6px 4px;text-align:center;font-family:var(--f-mono);font-size:16px;font-weight:700;-moz-appearance:textfield}
+.clip .ord::-webkit-inner-spin-button,.clip .ord::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.clip.loading{opacity:.7}.clip.loading .ph{animation:pulse 1s ease-in-out infinite alternate}
+@keyframes pulse{from{opacity:.4}to{opacity:1}}
+#loadBox{display:flex;flex-direction:column;gap:4px}
 .clip img,.clip .ph{width:54px;height:96px;object-fit:cover;border-radius:6px;background:var(--sunk);display:block}
 .clip .meta{display:flex;flex-direction:column;gap:6px;min-width:0}
 .clip .name{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -2010,6 +2014,7 @@ button.icon{padding:4px 8px;font-size:13px;border-radius:8px}
 .clip .gio{font-family:var(--f-mono)}
 .clip .acts{display:flex;flex-direction:column;gap:4px}
 .clip.bad{border-color:var(--danger)}
+.clip.bad .meta .name:last-child{white-space:normal;color:var(--danger)}
 .wave{width:100%;height:56px;display:block;border-radius:8px;background:var(--sunk);touch-action:none;cursor:grab}
 .tldock{position:sticky;bottom:0;z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:12px 12px 0 0;box-shadow:0 -6px 20px rgba(0,0,0,.12);padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:6px;min-width:0}
 .tlbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tlbar .sp{flex:1}.tlbar strong{font-family:var(--f-display)}
@@ -2031,6 +2036,11 @@ body.std .pro-only{display:none!important}
 .chip.ai{background:color-mix(in srgb,var(--gold) 22%,var(--surface))}
 .clip .trim{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
 .clip .trim .rng{font-family:var(--f-mono);font-variant-numeric:tabular-nums;margin-right:4px}
+@media (max-width:560px){.clip{position:relative;grid-template-columns:40px 48px minmax(0,1fr);gap:8px}
+.clip .ord{width:40px}.clip img,.clip .ph{width:48px;height:85px}
+.clip .acts{position:absolute;top:4px;right:4px;flex-direction:row}.clip .meta>.name:first-child{padding-right:44px}.clip.bad .meta>.name{padding-right:84px}
+.clip .ins{grid-template-columns:minmax(0,1fr)}.clip .ins .gio{width:96px}
+.clip .trim{gap:4px}.clip .trim .icon{font-size:12px;padding:4px 6px}}
 .trimbox{display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--sunk);border:1px solid var(--accent);border-radius:10px;margin-top:-4px}
 .trimbox video{display:block;max-height:340px;max-width:100%;align-self:center;border-radius:8px;background:#000}
 .tbar{position:relative;height:30px;background:var(--bg);border:1px solid var(--line);border-radius:6px;cursor:pointer;overflow:hidden}
@@ -2055,7 +2065,7 @@ body.std .pro-only{display:none!important}
 .check{display:flex;gap:8px;align-items:center;font-size:14px}
 details summary{cursor:pointer;color:var(--muted);font-size:13px}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
-@media (max-width:600px){body{font-size:16px;padding-block:12px 40px}button{min-height:44px;padding:10px 14px}button.icon{min-height:40px;min-width:40px}.side .stage{width:min(100%,calc(56vh * 0.5625))}.card{padding:14px}.clip{grid-template-columns:auto 46px minmax(0,1fr) auto}.clip img,.clip .ph{width:46px;height:82px}.clip .ins{grid-template-columns:70px minmax(0,1fr)}input[type=text],input[type=number],textarea{font-size:16px}h1{font-size:28px}.modes{width:100%}.mode{flex:1}}
+@media (max-width:600px){body{font-size:16px;padding-block:12px 40px}button{min-height:44px;padding:10px 14px}button.icon{min-height:40px;min-width:40px}.side .stage{width:min(100%,calc(56vh * 0.5625))}.card{padding:14px}input[type=text],input[type=number],textarea{font-size:16px}h1{font-size:28px}.modes{width:100%}.mode{flex:1}}
 </style>
 
 <div class="wrap">
@@ -2089,6 +2099,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
           <button id="btnSampleA" data-music="nhac_remix.mp3">Mẫu + nhạc remix</button>
           <button id="btnSampleB" data-music="nhac_dreaming-big.mp3">Mẫu + nhạc Mixkit</button></div>
         <label class="check"><input type="checkbox" id="autoCut" checked> Tự cắt video dài hơn 20 giây thành các đoạn đúng độ dài cảnh (dò chỗ chuyển cảnh)</label>
+        <div id="loadBox" hidden><div class="bar"><i id="loadProg"></i></div><span class="hint" id="loadTxt"></span></div>
         <p class="msg" id="cutMsg"></p>
         <div class="clips" id="clipList"></div>
         <details><summary>Dán chữ hàng loạt · lấy giờ từ file · sắp theo giờ quay</summary>
@@ -2096,7 +2107,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
           <div class="row"><button id="btnBatch">Điền vào các cảnh</button><button id="btnTimeFile">Lấy giờ từ file</button><button id="btnSortTime">Sắp theo giờ quay</button></div>
           <p class="hint">Giờ lấy từ thời điểm ghi của file video, chỉ điền vào cảnh chưa có giờ. Nếu file đã bị chép qua lại thì giờ có thể sai.</p>
         </details>
-        <p class="hint" id="clipHint">Thứ tự trong danh sách là thứ tự cảnh. Đổi bằng nút ↑ ↓.</p>
+        <p class="hint" id="clipHint">Ô số bên trái là thứ tự cảnh: gõ số mới (vd 1) rồi bấm ra ngoài hoặc Enter để chuyển cảnh tới vị trí đó.</p>
       </section>
 
       <section class="card" aria-labelledby="h2s">
@@ -2218,13 +2229,19 @@ function natural(a, b) { return a.localeCompare(b, undefined, { numeric: true, s
 
 async function addFiles(files) {
   files.sort((a, b) => natural(a.name, b.name));
-  const longs = [];
+  const longs = [], vids = files.filter(f => (f.type || '').startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv)$/i.test(f.name));
+  let done = 0; const box = $('loadBox');
+  const step = (name) => { const n = vids.length; box.hidden = !n; $('loadProg').style.width = (n ? 100 * done / n : 0) + '%';
+    $('loadTxt').textContent = done < n ? `Đang nạp clip ${done + 1}/${n}: ${name}…` : `Đã nạp ${n} clip.`; };
   for (const f of files) {
     const t = f.type || '';
     if (t.startsWith('audio/') || /\.(mp3|m4a|wav|aac|flac|ogg)$/i.test(f.name)) { loadMusic(f); continue; }
     if (t === 'image/png') { const img = new Image(); img.src = URL.createObjectURL(f); await img.decode().catch(() => {}); S.sticker = img; continue; }
-    if (t.startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv)$/i.test(f.name)) { const c = await addClip(f); if (c && c.ok && c.dur > 20 && $('autoCut').checked) longs.push(c); }
+    if (vids.includes(f)) { step(f.name); const c = await addClip(f); done++; step(''); if (c && c.ok && c.dur > 20 && $('autoCut').checked) longs.push(c); }
   }
+  setTimeout(() => { if (done >= vids.length) box.hidden = true; }, 1500);
+  const bad = S.clips.filter(c => !c.ok && !c.loading).length;
+  if (bad) msg('cutMsg', `${bad} clip chưa đọc được (viền đỏ). Bấm ↻ để thử lại, hoặc xem lý do ngay dưới tên clip.`, 'err');
   renderClips(); rebuild();
   for (const c of longs) await autoSplit(c);
 }
@@ -2251,12 +2268,35 @@ function drawCover(ctx, src, sw, sh, w = W, h = H) {
   const s = Math.max(w / sw, h / sh), dw = sw * s, dh = sh * s;
   ctx.drawImage(src, (w - dw) / 2, (h - dh) / 2, dw, dh);
 }
-async function addClip(file) {
-  const c = { id: ++S.seq, file, name: file.name, url: URL.createObjectURL(file), dur: 0, ok: false, gio: '', cau: '', thumb: '' };
-  S.clips.push(c);
+// Nap video chac hon: cho metadata truoc, neu trinh duyet (iPhone/Android) chua giai ma khung dau thi "kich" bang play/pause.
+async function loadVid(v, ms) {
+  if (v.error) throw new Error('media error');
+  if (v.readyState < 1) await once(v, 'loadedmetadata', ms);
+  if (v.readyState >= 2) return;
+  try { await once(v, 'loadeddata', 5000); return; } catch (e) { if (e.message === 'media error') throw e; }
+  try { await v.play(); v.pause(); } catch (e) {}
+  if (v.readyState < 2) await once(v, 'loadeddata', ms);
+}
+async function sniffHevc(file) {
   try {
+    const n = 4 << 20, parts = [file.slice(0, n), file.size > n ? file.slice(file.size - n) : null].filter(Boolean);
+    for (const b of parts) { const t = new TextDecoder('latin1').decode(await b.arrayBuffer()); if (/hvc1|hev1/.test(t)) return true; }
+  } catch (e) {}
+  return false;
+}
+async function addClip(file) {
+  const c = { id: ++S.seq, file, name: file.name, url: URL.createObjectURL(file), dur: 0, ok: false, gio: '', cau: '', thumb: '', loading: true };
+  S.clips.push(c); renderClips();
+  await loadInto(c);
+  return c;
+}
+async function loadInto(c) {
+  const file = c.file, ms = 30000 + Math.round(file.size / 1e7) * 1000;
+  c.loading = true; c.ok = false;
+  try {
+    if (c.el) { c.el.removeAttribute('src'); c.el.load(); }
     c.el = newVideo(c.url);
-    await once(c.el, 'loadeddata');
+    await loadVid(c.el, ms);
     c.dur = c.el.duration; c.w = c.el.videoWidth; c.h = c.el.videoHeight;
     if (!c.w || !isFinite(c.dur)) throw new Error('no video');
     c.tin = 0; c.tout = c.dur; c.manual = false;
@@ -2265,7 +2305,16 @@ async function addClip(file) {
     drawCover(t.getContext('2d'), c.el, c.w, c.h, 180, 320);
     c.thumb = t.toDataURL('image/jpeg', 0.7);
     c.ok = true;
-  } catch (e) { c.ok = false; c.err = 'Trình duyệt không đọc được clip này (thường do HEVC/H.265 của iPhone). Đổi sang H.264 hoặc mở bằng Chrome.'; }
+  } catch (e) {
+    c.ok = false;
+    const mb = Math.round(file.size / 1e6), hevc = await sniffHevc(file);
+    if (hevc) c.err = 'Clip quay chuẩn HEVC/H.265 (iPhone "Hiệu suất cao"), trình duyệt này không giải mã được. Mở bằng Safari/Chrome trên điện thoại, hoặc đổi Camera → Định dạng → "Tương thích nhất".';
+    else if (/timeout/.test(e.message)) c.err = `Nạp quá lâu (${mb} MB). Bấm ↻ để thử lại; nếu vẫn lỗi, cắt clip ngắn lại hoặc giảm xuống 1080p.`;
+    else if (/\.(mkv|avi|wmv|flv)$/i.test(file.name)) c.err = 'Định dạng này trình duyệt không mở được. Hãy dùng file .mp4 hoặc .mov.';
+    else c.err = 'Trình duyệt không đọc được clip này (có thể file hỏng hoặc mã hoá lạ). Bấm ↻ để thử lại, hoặc xuất lại thành .mp4 H.264.';
+  }
+  c.loading = false;
+  renderClips();
   return c;
 }
 
@@ -2286,7 +2335,7 @@ async function dupClip(c) {
     tin: c.tout < c.dur - 1 ? c.tout : 0, tout: c.dur });
   n.tout = Math.min(c.dur, n.tin + 5);
   n.el = newVideo(c.url);
-  try { await once(n.el, 'loadeddata'); } catch (e) {}
+  try { await loadVid(n.el, 30000); } catch (e) {}
   S.clips.splice(S.clips.indexOf(c) + 1, 0, n);
   S.trimId = n.id; renderClips(); rebuild();
 }
@@ -2336,14 +2385,24 @@ function trimEditor(c) {
 function renderClips() {
   const L = $('clipList'); L.innerHTML = '';
   S.clips.forEach((c, i) => {
-    const d = document.createElement('div'); d.className = 'clip' + (c.ok ? '' : ' bad');
-    d.innerHTML = `<span class="idx">${i + 1}</span>${c.thumb ? `<img alt="" src="${c.thumb}">` : '<span class="ph"></span>'}
-      <div class="meta"><div class="name"><b></b> · ${c.ok ? c.dur.toFixed(1) + ' giây' : ''}</div>
+    const d = document.createElement('div'); d.className = 'clip' + (c.loading ? ' loading' : c.ok ? '' : ' bad');
+    d.innerHTML = `<input class="ord" type="number" inputmode="numeric" min="1" max="${S.clips.length}" value="${i + 1}" aria-label="Thứ tự cảnh">${c.thumb ? `<img alt="" src="${c.thumb}">` : '<span class="ph"></span>'}
+      <div class="meta"><div class="name"><b></b> · ${c.ok ? c.dur.toFixed(1) + ' giây' : c.loading ? 'đang nạp…' : ''}</div>
       ${c.ok ? `<div class="ins"><input class="gio" type="text" placeholder="07:35" aria-label="Giờ cảnh ${i + 1}" id="g${c.id}"><input type="text" placeholder="Câu cho cảnh này" aria-label="Câu cảnh ${i + 1}" id="c${c.id}"></div>
       <div class="trim"><span class="rng"></span><button class="icon" data-a="trim">✂ Chọn đoạn</button><button class="icon" data-a="auto">⚡ Tự cắt</button><button class="icon" data-a="dup">＋ Thêm đoạn từ clip này</button></div>` : `<div class="name"></div>`}</div>
-      <div class="acts"><button class="icon" data-a="up" aria-label="Lên">↑</button><button class="icon" data-a="down" aria-label="Xuống">↓</button><button class="icon" data-a="del" aria-label="Bỏ clip">✕</button></div>`;
+      <div class="acts">${!c.ok && !c.loading ? '<button class="icon" data-a="retry" aria-label="Thử lại">↻</button>' : ''}<button class="icon" data-a="del" aria-label="Bỏ clip">✕</button></div>`;
     d.querySelector('.name b').textContent = c.name;
-    if (!c.ok) d.querySelectorAll('.name')[1].textContent = c.err;
+    const ord = d.querySelector('.ord');
+    const moveTo = () => {
+      const k = S.clips.indexOf(c), n = Math.round(clamp(parseFloat(ord.value) || k + 1, 1, S.clips.length)) - 1;
+      if (n === k) { ord.value = k + 1; return; }
+      S.clips.splice(k, 1); S.clips.splice(n, 0, c); renderClips(); rebuild();
+      const el = $('clipList').querySelectorAll('.ord')[n]; if (el) { el.closest('.clip').scrollIntoView({ block: 'nearest' }); el.parentElement.animate([{ background: 'var(--sunk)' }, { background: 'var(--bg)' }], 700); }
+    };
+    ord.addEventListener('change', moveTo);
+    ord.addEventListener('keydown', ev => { if (ev.key === 'Enter') ord.blur(); });
+    ord.addEventListener('focus', () => ord.select());
+    if (!c.ok) d.querySelectorAll('.name')[1].textContent = c.loading ? '' : c.err;
     else {
       const g = d.querySelector('.gio'), q = d.querySelector('#c' + c.id);
       g.value = c.gio; q.value = c.cau;
@@ -2357,9 +2416,8 @@ function renderClips() {
       if (a === 'trim') { S.trimId = S.trimId === c.id ? null : c.id; renderClips(); return; }
       if (a === 'dup') { dupClip(c); return; }
       if (a === 'auto') { autoSplit(c); return; }
+      if (a === 'retry') { loadInto(c).then(() => rebuild()); return; }
       if (a === 'del') S.clips.splice(k, 1);
-      if (a === 'up' && k > 0) [S.clips[k - 1], S.clips[k]] = [S.clips[k], S.clips[k - 1]];
-      if (a === 'down' && k < S.clips.length - 1) [S.clips[k + 1], S.clips[k]] = [S.clips[k], S.clips[k + 1]];
       renderClips(); rebuild();
     });
     L.appendChild(d);
